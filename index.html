@@ -168,16 +168,16 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   <!-- STEP 1: 파일 업로드 -->
   <div class="step-card" id="step1Card">
     <div class="step-label">STEP 1 &nbsp;원자료 파일 업로드</div>
-    <div class="upload-area" id="mainDropZone"
+    <label class="upload-area" id="mainDropZone"
       ondragover="event.preventDefault();this.classList.add('drag-over')"
       ondragleave="this.classList.remove('drag-over')"
       ondrop="handleRawDrop(event)"
-      onclick="document.getElementById('rawFileInput').click()">
+      style="cursor:pointer;display:block;">
+      <input type="file" id="rawFileInput" accept=".html,.htm" style="display:none" onchange="handleRawFile(this.files[0])">
       <div class="upload-icon">📂</div>
       <div class="upload-text" id="uploadText">클릭하거나 파일을 끌어다 놓으세요</div>
       <div class="upload-sub">Google Sheets에서 다운로드한 <strong>원자료.html</strong></div>
-    </div>
-    <input type="file" id="rawFileInput" accept=".html,.htm" style="display:none" onchange="handleRawFile(this.files[0])">
+    </label>
   </div>
 
   <!-- STEP 2: 월 선택 (파일 로드 후 표시) -->
