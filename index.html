@@ -167,8 +167,10 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   .chart-grid > div{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
   .print-chart-img{width:100%!important;height:auto!important;min-height:200px;display:block!important;}
 
-  /* 캔버스는 이미지로 대체되므로 숨김 */
+  /* 인쇄 시 캔버스 숨김, 미리만든 img 표시 */
   canvas{display:none!important;}
+  .pre-print-img{display:block!important;width:100%!important;height:auto!important;}
+  .print-chart-img{display:block!important;width:100%!important;height:auto!important;}
 
   /* 페이지 분리 */
   .chart-page-break{page-break-before:always;break-before:always;}
@@ -314,7 +316,8 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
       </div>
       <canvas id="deptChart" height="60"></canvas>
     </div>
-    <div class="chart-card" style="padding:0;overflow:hidden;">
+    <!-- 부서 상세표: 2페이지 시작 -->
+    <div class="chart-card section-page-break" style="padding:0;overflow:hidden;">
       <table class="dept-table" id="deptTable"></table>
     </div>
   </div>
@@ -754,6 +757,28 @@ function applyChartSettings(){
     options:{indexAxis:isHoriz?'y':'x',responsive:true,
       plugins:{legend:{display:isDoughnut,position:'right',labels:{font:{size:10},boxWidth:12}}},
       scales:isDoughnut?{}:{y:{ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // 모든 차트 렌더 완료 후 숨김 img 미리 생성
+  setTimeout(updatePrintImages, 500);
+}
+
+function updatePrintImages(){
+  const ids = ['deptChart','timeChart','jobChart','careerChart','reasonChart'];
+  ids.forEach(id=>{
+    const canvas = document.getElementById(id);
+    if(!canvas) return;
+    // 기존 print-img 제거
+    const old = canvas.parentNode.querySelector('.pre-print-img');
+    if(old) old.remove();
+    // 새 img 생성 (숨김 상태)
+    if(canvas.width > 0){
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png',1);
+      img.className = 'pre-print-img';
+      img.style.cssText = 'display:none;width:100%;height:auto;';
+      canvas.parentNode.appendChild(img);
+    }
   });
 }
 
@@ -1227,32 +1252,30 @@ ${improveSection}${issueSection}
 function printReport(){
   if(!parsedData){ window.print(); return; }
 
-  applyChartSettings();
-
-  setTimeout(()=>{
-    const canvases = document.querySelectorAll('canvas');
-    const replacements = [];
-    canvases.forEach(canvas=>{
-      // 캔버스가 실제로 그려졌는지 확인 (너비/높이 > 0)
-      if(canvas.width === 0 || canvas.height === 0) return;
-      const img = document.createElement('img');
-      img.src = canvas.toDataURL('image/png', 1.0);
-      img.style.cssText = 'width:100%;height:auto;display:block;min-height:180px;object-fit:contain;';
-      img.className = 'print-chart-img';
-      canvas.parentNode.insertBefore(img, canvas);
+  // 미리 만든 img 보이고 canvas 숨기기
+  const ids = ['deptChart','timeChart','jobChart','careerChart','reasonChart'];
+  ids.forEach(id=>{
+    const canvas = document.getElementById(id);
+    if(!canvas) return;
+    const img = canvas.parentNode.querySelector('.pre-print-img');
+    if(img){
+      img.style.display = 'block';
       canvas.style.display = 'none';
-      replacements.push({canvas, img});
+    }
+  });
+
+  window.print();
+
+  // 인쇄 후 원복
+  setTimeout(()=>{
+    ids.forEach(id=>{
+      const canvas = document.getElementById(id);
+      if(!canvas) return;
+      canvas.style.display = '';
+      const img = canvas.parentNode.querySelector('.pre-print-img');
+      if(img) img.style.display = 'none';
     });
-
-    window.print();
-
-    setTimeout(()=>{
-      replacements.forEach(({canvas, img})=>{
-        img.remove();
-        canvas.style.display = '';
-      });
-    }, 1000);
-  }, 600);
+  }, 1000);
 }
 
 // 브라우저가 HTML 파일을 새 탭으로 여는 기본 동작 전역 차단
