@@ -97,8 +97,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
 .tool-table td{padding:6px 10px;border:1px solid var(--gray-100);}
 .tool-table td:last-child{text-align:right;font-weight:700;}
 
-/* 종합결과 */
-.summary-result{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:18px 22px;box-shadow:var(--shadow);}
+/* 편집 가능 카드 */
+.editable-card{background:#fff;border:1.5px dashed var(--gray-300);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);min-height:80px;position:relative;cursor:text;}
+.editable-card:focus-within{border-color:var(--blue);border-style:solid;}
+.editable-hint{font-size:11px;color:var(--gray-400);margin-bottom:6px;}
+.editable-area{min-height:60px;outline:none;font-size:13px;line-height:1.8;color:var(--gray-900);font-family:inherit;white-space:pre-wrap;}
+.editable-area:empty::before{content:attr(placeholder);color:var(--gray-400);}
+@media print{
+  .editable-card{border:1px solid var(--gray-200)!important;border-style:solid!important;}
+  .editable-hint{display:none;}
+}
 .sr-text{font-size:13px;line-height:2;color:var(--gray-900);}
 
 /* 푸터 */
@@ -107,12 +115,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
 @media print{
   .toolbar,.input-wrap,.btn{display:none!important;}
   .report-body{padding:4px 10px!important;display:block!important;}
-  body{background:#fff;font-size:11px;}
-  .chart-card,.summary-box,.section{break-inside:avoid;}
-  .chart-grid,.chart-grid-3{grid-template-columns:1fr 1fr!important;}
+  body{background:#fff;font-size:10px;}
   .rpt-footer{display:none!important;}
-  .rpt-title-box{border:2px solid #333;margin-bottom:12px;}
-  .rpt-main-title{font-size:18px;}
+  .rpt-title-box{border:2px solid #333;margin-bottom:10px;padding:12px;}
+  .rpt-main-title{font-size:16px;}
+  .section-title{font-size:12px;margin-bottom:6px;page-break-after:avoid;}
+  .section{page-break-inside:avoid;margin-bottom:14px;}
+  .chart-card{page-break-inside:avoid;padding:10px 12px;margin-bottom:8px;}
+  .summary-box{page-break-inside:avoid;}
+  .dept-table{font-size:9px;}
+  .dept-table th,.dept-table td{padding:3px 4px;}
+  canvas{max-height:160px!important;}
+  .chart-grid,.chart-grid-3{grid-template-columns:1fr 1fr!important;}
+  .section-num{width:16px;height:16px;font-size:10px;}
+  .target-badge{font-size:9px;}
+  .summary-result{padding:10px 14px;}
+  .sr-text{font-size:11px;line-height:1.8;}
+  .tool-table{font-size:10px;}
+  .sb-table td,.sb-table th{padding:5px 8px;}
+  .big-num{font-size:16px!important;}
 }
 </style>
 </head>
@@ -184,35 +205,31 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
     </div>
   </div>
 
-  <!-- 2. 시점별 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">2</span> 시점별 환자확인율(단위: %)</div>
-    <div class="chart-card">
-      <canvas id="timeChart" height="70"></canvas>
+  <!-- 2~5. 세부분석 2열 그리드 -->
+  <div class="chart-grid" style="margin-bottom:14px;">
+    <div>
+      <div class="section-title" style="font-size:12px;"><span class="section-num">2</span> 시점별 환자확인율(단위: %)</div>
+      <div class="chart-card">
+        <canvas id="timeChart" height="130"></canvas>
+      </div>
     </div>
-  </div>
-
-  <!-- 3. 직종별 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">3</span> 직종별 환자확인율(단위: %)</div>
-    <div class="chart-card">
-      <canvas id="jobChart" height="80"></canvas>
+    <div>
+      <div class="section-title" style="font-size:12px;"><span class="section-num">3</span> 직종별 환자확인율(단위: %)</div>
+      <div class="chart-card">
+        <canvas id="jobChart" height="130"></canvas>
+      </div>
     </div>
-  </div>
-
-  <!-- 4. 연차별 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">4</span> 연차별 환자확인율(단위: %)</div>
-    <div class="chart-card">
-      <canvas id="careerChart" height="80"></canvas>
+    <div>
+      <div class="section-title" style="font-size:12px;"><span class="section-num">4</span> 연차별 환자확인율(단위: %)</div>
+      <div class="chart-card">
+        <canvas id="careerChart" height="130"></canvas>
+      </div>
     </div>
-  </div>
-
-  <!-- 5. 미수행 사유 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">5</span> 미수행 사유(단위: %)</div>
-    <div class="chart-card">
-      <canvas id="reasonChart" height="80"></canvas>
+    <div>
+      <div class="section-title" style="font-size:12px;"><span class="section-num">5</span> 미수행 사유(단위: %)</div>
+      <div class="chart-card">
+        <canvas id="reasonChart" height="130"></canvas>
+      </div>
     </div>
   </div>
 
@@ -229,6 +246,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
     <div class="section-title"><span class="section-num">7</span> 종합결과</div>
     <div class="summary-result">
       <div class="sr-text" id="summaryText"></div>
+    </div>
+  </div>
+
+  <!-- 8. 개선활동 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">8</span> 개선활동</div>
+    <div class="editable-card">
+      <div class="editable-hint">✏️ 클릭하여 입력</div>
+      <div id="editImprove" class="editable-area" contenteditable="true" 
+        onkeydown="removeHint(this)" 
+        onblur="showHintIfEmpty(this)"
+        placeholder="개선활동 내용을 입력하세요..."></div>
+    </div>
+  </div>
+
+  <!-- 9. 미비사항 및 향후계획 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">9</span> 미비사항 및 향후계획</div>
+    <div class="editable-card">
+      <div class="editable-hint">✏️ 클릭하여 입력</div>
+      <div id="editIssue" class="editable-area" contenteditable="true"
+        onkeydown="removeHint(this)"
+        onblur="showHintIfEmpty(this)"
+        placeholder="미비사항 및 향후계획을 입력하세요..."></div>
     </div>
   </div>
 
@@ -555,6 +596,9 @@ function generateSummary(data,prev,month){
   document.getElementById('summaryText').innerHTML=html;
 }
 
+function removeHint(el){ el.previousElementSibling.style.display='none'; }
+function showHintIfEmpty(el){ if(!el.textContent.trim()) el.previousElementSibling.style.display='block'; }
+
 function parseAndRender(){
   const text=document.getElementById('pasteArea').value.trim();
   if(!text){alert('이번 달 데이터를 붙여넣어 주세요!');return;}
@@ -617,6 +661,8 @@ function exportWord(){
     </tr>`}).join('');
 
   const summaryHtml=document.getElementById('summaryText')?.innerHTML||'';
+  const improveHtml=document.getElementById('editImprove')?.innerHTML||'';
+  const issueHtml=document.getElementById('editIssue')?.innerHTML||'';
 
   const html=`
 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -688,6 +734,16 @@ ${Array.from({length:Math.max(d.patientTools.length,d.staffTools.length)}).map((
 <h2>7. 종합결과</h2>
 <div style="border:1px solid #c4cad5;border-radius:4px;padding:12px 14px;font-size:10pt;line-height:2;">
 ${summaryHtml}
+</div>
+
+<h2>8. 개선활동</h2>
+<div style="border:1px solid #c4cad5;border-radius:4px;padding:12px 14px;min-height:80px;font-size:10pt;line-height:1.8;">
+${improveHtml||'<span style="color:#aaa">-</span>'}
+</div>
+
+<h2>9. 미비사항 및 향후계획</h2>
+<div style="border:1px solid #c4cad5;border-radius:4px;padding:12px 14px;min-height:80px;font-size:10pt;line-height:1.8;">
+${issueHtml||'<span style="color:#aaa">-</span>'}
 </div>
 
 <br><br>
