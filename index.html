@@ -173,7 +173,7 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
       ondragleave="this.classList.remove('drag-over')"
       ondrop="handleRawDrop(event)"
       style="cursor:pointer;display:block;">
-      <input type="file" id="rawFileInput" accept=".html,.htm" style="display:none" onchange="handleRawFile(this.files[0])">
+      <input type="file" id="rawFileInput" accept="text/html,text/plain,*/*" style="display:none" onchange="handleRawFile(this.files[0])">
       <div class="upload-icon">📂</div>
       <div class="upload-text" id="uploadText">클릭하거나 파일을 끌어다 놓으세요</div>
       <div class="upload-sub">Google Sheets에서 다운로드한 <strong>원자료.html</strong></div>
@@ -664,6 +664,7 @@ let rawAllRows = [];  // 전체 원자료 행
 
 function handleRawDrop(e){
   e.preventDefault();
+  e.stopPropagation();
   e.currentTarget.classList.remove('drag-over');
   const file = e.dataTransfer.files[0];
   if(file) handleRawFile(file);
@@ -828,79 +829,6 @@ function generateFromRaw(){
   renderReport(data, prev, prev2);
 }
 
-function toggleSection
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e){
-    rawFiles[type] = e.target.result;
-    const labels = {current:'uploadText', prev:'uploadTextPrev', prev2:'uploadTextPrev2'};
-    const el = document.getElementById(labels[type]);
-    el.textContent = '✅ ' + file.name;
-    el.closest('.upload-area').classList.add('loaded');
-    if(rawFiles.current){
-      document.getElementById('generateBtn').disabled = false;
-      document.getElementById('fileStatus').textContent = '이번 달 파일 준비 완료 — 보고서 생성을 눌러주세요!';
-    }
-    // 보고월 자동 감지
-    if(type === 'current'){
-      const monthMatch = e.target.result.match(/보고월.*?(\d{4}-\d{2})/);
-      if(monthMatch && !document.getElementById('metaMonth').value){
-        const [y,m] = monthMatch[1].split('-');
-        document.getElementById('metaMonth').value = `${y}년 ${parseInt(m)}월`;
-      }
-    }
-  };
-  reader.readAsText(file, 'utf-8');
-}
-
-function parseHtmlTable(html){
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const rows = [];
-  doc.querySelectorAll('tr').forEach(tr => {
-    const cells = [];
-    tr.querySelectorAll('td,th').forEach(td => cells.push(td.textContent.trim()));
-    if(cells.some(c=>c)) rows.push(cells);
-  });
-  // HTML 테이블은 행번호가 첫 컬럼 — 제거
-  return rows.map(r => r[0] && /^\d+$/.test(r[0]) ? r.slice(1) : r);
-}
-
-function parseDataFromRows(rows){
-  const d={month:'',total:0,confirmed:0,unconfirmed:0,rate:'',
-    dept:[],time:[],job:[],career:[],reasons:[],patientTools:[],staffTools:[],openDept:[],crossDept:[]};
-  let section='';
-  for(const row of rows){
-    const [a='',b='',c='',e=''] = row;
-    if(a==='보고월') d.month=b;
-    if(a==='총 관찰건수') d.total=parseInt(b)||0;
-    if(a==='확인 건수') d.confirmed=parseInt(b)||0;
-    if(a==='미확인 건수') d.unconfirmed=parseInt(b)||0;
-    if(a==='확인율'&&!d.rate) d.rate=b;
-    if(a==='부서'&&b==='관찰'&&c==='확인'){section='dept';continue;}
-    if(a==='시점'&&b==='관찰'){section='time';continue;}
-    if(a==='직종'&&b==='관찰'){section='job';continue;}
-    if(a==='경력'&&b==='관찰'){section='career';continue;}
-    if(a==='미수행 사유'){section='reason';continue;}
-    if(a==='환자도구'){section='ptool';continue;}
-    if(a==='직원도구'){section='stool';continue;}
-    if(a==='개방형'&&b==='관찰'){section='open';continue;}
-    if(a==='대조확인'&&b==='관찰'){section='cross';continue;}
-    if(!a||a==='합계') continue;
-    if(section==='dept'&&b&&c&&e) d.dept.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
-    if(section==='time'&&b&&c&&e) d.time.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
-    if(section==='job'&&b&&c&&e) d.job.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
-    if(section==='career'&&b&&c&&e) d.career.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
-    if(section==='reason'&&b) d.reasons.push({name:a,count:parseInt(b)||0,rate:c});
-    if(section==='ptool'&&b&&a!=='합계') d.patientTools.push({name:a,count:parseInt(b)||0});
-    if(section==='stool'&&b&&a!=='합계') d.staffTools.push({name:a,count:parseInt(b)||0});
-    if(section==='open'&&b&&c&&e) d.openDept.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
-    if(section==='cross'&&b&&c&&e) d.crossDept.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
-  }
-  return d;
-}
-
-
 function toggleSection(type){
   if(type==='improve'){
     const checked=document.getElementById('toggleImprove').checked;
@@ -913,7 +841,7 @@ function toggleSection(type){
   }
 }
 
-(el){ el.previousElementSibling.style.display='none'; }
+function removeHint(el){ el.previousElementSibling.style.display='none'; }
 function showHintIfEmpty(el){ if(!el.textContent.trim()) el.previousElementSibling.style.display='block'; }
 
 
@@ -1132,6 +1060,10 @@ ${improveSection}${issueSection}
   a.click();
   URL.revokeObjectURL(a.href);
 }
+
+// 브라우저가 HTML 파일을 새 탭으로 여는 기본 동작 전역 차단
+window.addEventListener('dragover', function(e){ e.preventDefault(); });
+window.addEventListener('drop', function(e){ e.preventDefault(); });
 </script>
 </body>
 </html>
