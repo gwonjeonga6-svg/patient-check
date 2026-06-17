@@ -596,6 +596,14 @@ function exportWord(){
   d.openDept.forEach(v=>openMap[v.name]=v);
   d.crossDept.forEach(v=>crossMap[v.name]=v);
 
+  // 차트 이미지 추출
+  function getChartImg(id, w='100%'){
+    const canvas=document.getElementById(id);
+    if(!canvas) return '';
+    const img=canvas.toDataURL('image/png');
+    return `<img src="${img}" style="width:${w};max-width:700px;display:block;margin:6px auto;">`;
+  }
+
   const deptRows=d.dept.map((dept,i)=>{
     const o=openMap[dept.name],cr=crossMap[dept.name];
     return`<tr style="${i%2===1?'background:#f9fafb':''}">
@@ -616,13 +624,15 @@ function exportWord(){
 <style>
   body{font-family:'맑은 고딕',Arial,sans-serif;font-size:10pt;margin:1cm 1.5cm;line-height:1.6;}
   h1{font-size:16pt;font-weight:900;text-align:center;border:2px solid #333;padding:10px;margin-bottom:12px;}
-  h2{font-size:11pt;color:#1a5fa8;margin-top:14px;margin-bottom:6px;border-left:4px solid #1a5fa8;padding-left:8px;}
+  h2{font-size:11pt;color:#1a5fa8;margin-top:16px;margin-bottom:6px;border-left:4px solid #1a5fa8;padding-left:8px;}
   table{border-collapse:collapse;width:100%;margin-bottom:10px;font-size:9pt;}
   th{background:#e8f0fb;padding:5px 7px;text-align:center;border:1px solid #c4cad5;font-weight:bold;}
   td{border:1px solid #c4cad5;padding:4px 7px;}
   .meta{font-size:9pt;color:#555;text-align:right;margin-bottom:8px;}
   .footer{margin-top:16px;font-size:8pt;color:#888;border-top:1px solid #dde1e9;padding-top:4px;text-align:right;}
   ul{padding-left:18px;line-height:2;}
+  .chart-img{width:100%;margin:8px 0 12px 0;page-break-inside:avoid;}
+  p{margin-bottom:8px;}
 </style>
 </head>
 <body>
@@ -642,6 +652,7 @@ function exportWord(){
 </table>
 
 <h2>1. 부서별 및 방법별 환자확인 결과 (단위: 건수/%)</h2>
+<div class="chart-img">${getChartImg('deptChart')}</div>
 <table>
   <tr><th rowspan="2">부서</th><th rowspan="2">관찰</th><th colspan="2">1) 부서별 환자확인</th><th colspan="2">2) 개방형 질문</th><th colspan="2">3) 대조 확인</th></tr>
   <tr><th>확인(건)</th><th>확인율(%)</th><th>확인(건)</th><th>확인율(%)</th><th>확인(건)</th><th>확인율(%)</th></tr>
@@ -655,24 +666,16 @@ function exportWord(){
 </table>
 
 <h2>2. 시점별 환자확인율 (단위: %)</h2>
-<table><tr><th>시점</th><th>관찰</th><th>확인</th><th>확인율</th></tr>
-${d.time.map((t,i)=>`<tr style="${i%2===1?'background:#f9fafb':''}"><td>${t.name}</td><td style="text-align:center">${t.obs}</td><td style="text-align:center">${t.conf}</td><td style="text-align:center;font-weight:bold">${t.rate}</td></tr>`).join('')}
-</table>
+<div class="chart-img">${getChartImg('timeChart','85%')}</div>
 
 <h2>3. 직종별 환자확인율 (단위: %)</h2>
-<table><tr><th>직종</th><th>관찰</th><th>확인</th><th>확인율</th></tr>
-${d.job.map((j,i)=>`<tr style="${i%2===1?'background:#f9fafb':''}"><td>${j.name}</td><td style="text-align:center">${j.obs}</td><td style="text-align:center">${j.conf}</td><td style="text-align:center;font-weight:bold">${j.rate}</td></tr>`).join('')}
-</table>
+<div class="chart-img">${getChartImg('jobChart','85%')}</div>
 
 <h2>4. 연차별 환자확인율 (단위: %)</h2>
-<table><tr><th>경력</th><th>관찰</th><th>확인</th><th>확인율</th></tr>
-${d.career.map((c,i)=>`<tr style="${i%2===1?'background:#f9fafb':''}"><td>${c.name}</td><td style="text-align:center">${c.obs}</td><td style="text-align:center">${c.conf}</td><td style="text-align:center;font-weight:bold">${c.rate}</td></tr>`).join('')}
-</table>
+<div class="chart-img">${getChartImg('careerChart','70%')}</div>
 
 <h2>5. 미수행 사유 (단위: %)</h2>
-<table><tr><th>사유</th><th>건수</th><th>비율</th></tr>
-${d.reasons.filter(r=>r.count>0).map((r,i)=>`<tr style="${i%2===1?'background:#f9fafb':''}"><td>${r.name}</td><td style="text-align:center">${r.count}건</td><td style="text-align:center">${r.rate}</td></tr>`).join('')}
-</table>
+<div class="chart-img">${getChartImg('reasonChart','75%')}</div>
 
 <h2>6. 확인도구 (단위: 건수)</h2>
 <table><tr><th>환자용 도구</th><th>건수</th><th>직원용 도구</th><th>건수</th></tr>
@@ -685,6 +688,12 @@ ${Array.from({length:Math.max(d.patientTools.length,d.staffTools.length)}).map((
 <h2>7. 종합결과</h2>
 <div style="border:1px solid #c4cad5;border-radius:4px;padding:12px 14px;font-size:10pt;line-height:2;">
 ${summaryHtml}
+</div>
+
+<br><br>
+<div style="border:1px solid #c4cad5;padding:12px 14px;min-height:100px;">
+  <p style="font-weight:bold;color:#1a5fa8;margin-bottom:8px;">■ 개선활동 / 첨부사진</p>
+  <p style="color:#aaa;font-size:9pt;">※ 개선활동 내용 또는 사진을 여기에 삽입하세요.</p>
 </div>
 
 <div class="footer">작성일: ${new Date().toLocaleDateString('ko-KR')} | 좋은삼선병원 QPS실 내선 9422 | 환자안전 기준 1.1</div>
