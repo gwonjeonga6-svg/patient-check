@@ -122,6 +122,11 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
 .upload-area.loaded .upload-icon::after{content:' ✅';}
 
 
+.chart-type-btns{display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle;}
+.ct-btn{padding:2px 8px;font-size:10px;font-weight:600;border:1.5px solid var(--gray-200);border-radius:4px;background:#fff;color:var(--gray-500);cursor:pointer;transition:all .12s;font-family:inherit;}
+.ct-btn:hover{border-color:var(--blue);color:var(--blue);}
+.ct-btn.ct-active{background:var(--blue);color:#fff;border-color:var(--blue);}
+
 /* 그래프 설정 패널 */
 .chart-panel{background:#fff;border-bottom:1px solid var(--gray-200);padding:12px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;}
 .cp-title{font-size:12px;font-weight:700;color:var(--blue);width:100%;margin-bottom:2px;}
@@ -299,7 +304,13 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   <div class="section">
     <div class="section-title"><span class="section-num">1</span> 부서별 및 방법별 환자확인 결과(단위: 건수/%) <span class="target-badge">목표 90% 이상</span></div>
     <div class="chart-card">
-      <div class="cc-title">부서별 환자확인율 (%)</div>
+      <div class="cc-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>부서별 환자확인율 (%)</span>
+        <span class="chart-type-btns no-print">
+          <button onclick="switchChartType('dept','bar',this)" class="ct-btn ct-active">막대</button>
+          <button onclick="switchChartType('dept','line',this)" class="ct-btn">꺾은선</button>
+        </span>
+      </div>
       <canvas id="deptChart" height="60"></canvas>
     </div>
     <div class="chart-card" style="padding:0;overflow:hidden;">
@@ -308,32 +319,51 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   </div>
 
   <!-- 2~3. 세부분석 1행 (시점별 + 직종별) -->
-  <div class="chart-grid chart-row chart-page-break" style="margin-bottom:14px;"> 환자확인율(단위: %)</div>
-      <div class="chart-card">
-        <canvas id="timeChart" height="130"></canvas>
+  <div class="chart-grid chart-row chart-page-break" style="margin-bottom:14px;">
+    <div>
+      <div class="section-title" style="font-size:12px;">
+        <span class="section-num">2</span> 시점별 환자확인율(단위: %)
+        <span class="chart-type-btns no-print" data-target="timeType">
+          <button onclick="switchChartType('time','bar',this)" class="ct-btn ct-active">막대</button>
+          <button onclick="switchChartType('time','line',this)" class="ct-btn">꺾은선</button>
+        </span>
       </div>
+      <div class="chart-card"><canvas id="timeChart" height="130"></canvas></div>
     </div>
     <div>
-      <div class="section-title" style="font-size:12px;"><span class="section-num">3</span> 직종별 환자확인율(단위: %)</div>
-      <div class="chart-card">
-        <canvas id="jobChart" height="130"></canvas>
+      <div class="section-title" style="font-size:12px;">
+        <span class="section-num">3</span> 직종별 환자확인율(단위: %)
+        <span class="chart-type-btns no-print" data-target="jobType">
+          <button onclick="switchChartType('job','line',this)" class="ct-btn ct-active">꺾은선</button>
+          <button onclick="switchChartType('job','bar',this)" class="ct-btn">막대</button>
+        </span>
       </div>
+      <div class="chart-card"><canvas id="jobChart" height="130"></canvas></div>
     </div>
   </div>
 
   <!-- 4~5. 세부분석 2행 (연차별 + 미수행사유) -->
   <div class="chart-grid chart-row" style="margin-bottom:14px;">
     <div>
-      <div class="section-title" style="font-size:12px;"><span class="section-num">4</span> 연차별 환자확인율(단위: %)</div>
-      <div class="chart-card">
-        <canvas id="careerChart" height="130"></canvas>
+      <div class="section-title" style="font-size:12px;">
+        <span class="section-num">4</span> 연차별 환자확인율(단위: %)
+        <span class="chart-type-btns no-print">
+          <button onclick="switchChartType('career','bar',this)" class="ct-btn ct-active">막대</button>
+          <button onclick="switchChartType('career','line',this)" class="ct-btn">꺾은선</button>
+        </span>
       </div>
+      <div class="chart-card"><canvas id="careerChart" height="130"></canvas></div>
     </div>
     <div>
-      <div class="section-title" style="font-size:12px;"><span class="section-num">5</span> 미수행 사유(단위: %)</div>
-      <div class="chart-card">
-        <canvas id="reasonChart" height="130"></canvas>
+      <div class="section-title" style="font-size:12px;">
+        <span class="section-num">5</span> 미수행 사유(단위: %)
+        <span class="chart-type-btns no-print">
+          <button onclick="switchChartType('reason','bar',this)" class="ct-btn ct-active">세로막대</button>
+          <button onclick="switchChartType('reason','horizontalBar',this)" class="ct-btn">가로막대</button>
+          <button onclick="switchChartType('reason','doughnut',this)" class="ct-btn">도넛</button>
+        </span>
       </div>
+      <div class="chart-card"><canvas id="reasonChart" height="130"></canvas></div>
     </div>
   </div>
 
@@ -655,6 +685,24 @@ function renderReport(data,prev,prev2){
 }
 
 // 그래프 설정 패널
+function switchChartType(chartName, type, btn){
+  // 버튼 활성화 표시
+  if(btn){
+    const siblings = btn.closest('.chart-type-btns').querySelectorAll('.ct-btn');
+    siblings.forEach(b=>b.classList.remove('ct-active'));
+    btn.classList.add('ct-active');
+  }
+  // 라디오 버튼 동기화 (그래프 설정 패널)
+  const radioMap = {dept:'deptType', time:'timeType', job:'jobType', reason:'reasonType'};
+  const radioName = radioMap[chartName];
+  if(radioName){
+    const radio = document.querySelector(`input[name=${radioName}][value="${type}"]`);
+    if(radio) radio.checked = true;
+  }
+  // 해당 차트만 재렌더
+  applyChartSettings();
+}
+
 function toggleChartPanel(){
   const p=document.getElementById('chartPanel');
   const isHidden = p.style.display==='none';
