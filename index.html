@@ -122,6 +122,16 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
 .upload-area.loaded .upload-icon::after{content:' ✅';}
 
 
+/* 그래프 설정 패널 */
+.chart-panel{background:#fff;border-bottom:1px solid var(--gray-200);padding:12px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;}
+.cp-title{font-size:12px;font-weight:700;color:var(--blue);width:100%;margin-bottom:2px;}
+.cp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.cp-label{font-size:11px;font-weight:600;color:var(--gray-600);min-width:90px;}
+.cp-options{display:flex;gap:12px;flex-wrap:wrap;}
+.cp-opt{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--gray-700);}
+.cp-opt input{cursor:pointer;}
+.cp-swatch{display:inline-block;width:40px;height:12px;border-radius:3px;vertical-align:middle;}
+
 /* 푸터 */
 .rpt-footer{background:#0f4080;color:rgba(255,255,255,0.45);padding:10px 28px;display:flex;justify-content:space-between;font-size:11px;flex-wrap:wrap;gap:6px;margin-top:20px;}
 
@@ -144,6 +154,8 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   .chart-row{page-break-inside:avoid;break-inside:avoid;}
   .chart-row .section-title{page-break-after:avoid;break-after:avoid;}
   .chart-row .chart-card{page-break-inside:avoid;break-inside:avoid;}
+  .chart-page-break{page-break-before:always;break-before:always;}
+  canvas{max-height:170px!important;}
   .section-num{width:16px;height:16px;font-size:10px;}
   .target-badge{font-size:9px;}
   .summary-result{padding:10px 14px;}
@@ -159,9 +171,52 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
 <div class="toolbar">
   <div class="tb-title">📋 환자확인 모니터링 결과 보고서 — 좋은삼선병원</div>
   <button class="btn btn-ghost" onclick="loadSample()">📋 샘플 미리보기</button>
+  <button class="btn btn-ghost no-print" id="chartSettingBtn" onclick="toggleChartPanel()" style="display:none;">🎨 그래프 설정</button>
   <button class="btn btn-ghost" onclick="window.print()">🖨 인쇄 / PDF</button>
   <button class="btn btn-green" onclick="exportWord()" id="wordBtn" style="display:none;">📄 Word 저장</button>
   <button class="btn btn-ghost" onclick="resetReport()">↺ 초기화</button>
+</div>
+
+<!-- 그래프 설정 패널 -->
+<div id="chartPanel" class="chart-panel no-print" style="display:none;">
+  <div class="cp-title">🎨 그래프 설정</div>
+  <div class="cp-row">
+    <div class="cp-label">색상 테마</div>
+    <div class="cp-options">
+      <label class="cp-opt"><input type="radio" name="colorTheme" value="default" checked onchange="applyChartSettings()"> <span class="cp-swatch" style="background:linear-gradient(90deg,#0e6b4f,#d97706,#b03030)"></span> 기본 (초록/주황/빨강)</label>
+      <label class="cp-opt"><input type="radio" name="colorTheme" value="blue" onchange="applyChartSettings()"> <span class="cp-swatch" style="background:linear-gradient(90deg,#1a5fa8,#60a5fa,#93c5fd)"></span> 블루 계열</label>
+      <label class="cp-opt"><input type="radio" name="colorTheme" value="mono" onchange="applyChartSettings()"> <span class="cp-swatch" style="background:linear-gradient(90deg,#374151,#6b7280,#d1d5db)"></span> 흑백 (인쇄용)</label>
+    </div>
+  </div>
+  <div class="cp-row">
+    <div class="cp-label">부서별 차트</div>
+    <div class="cp-options">
+      <label class="cp-opt"><input type="radio" name="deptType" value="bar" checked onchange="applyChartSettings()"> 막대</label>
+      <label class="cp-opt"><input type="radio" name="deptType" value="line" onchange="applyChartSettings()"> 꺾은선</label>
+    </div>
+  </div>
+  <div class="cp-row">
+    <div class="cp-label">시점별 차트</div>
+    <div class="cp-options">
+      <label class="cp-opt"><input type="radio" name="timeType" value="bar" checked onchange="applyChartSettings()"> 막대</label>
+      <label class="cp-opt"><input type="radio" name="timeType" value="line" onchange="applyChartSettings()"> 꺾은선</label>
+    </div>
+  </div>
+  <div class="cp-row">
+    <div class="cp-label">직종별 차트</div>
+    <div class="cp-options">
+      <label class="cp-opt"><input type="radio" name="jobType" value="line" checked onchange="applyChartSettings()"> 꺾은선</label>
+      <label class="cp-opt"><input type="radio" name="jobType" value="bar" onchange="applyChartSettings()"> 막대</label>
+    </div>
+  </div>
+  <div class="cp-row">
+    <div class="cp-label">미수행사유 차트</div>
+    <div class="cp-options">
+      <label class="cp-opt"><input type="radio" name="reasonType" value="bar" checked onchange="applyChartSettings()"> 세로 막대</label>
+      <label class="cp-opt"><input type="radio" name="reasonType" value="horizontalBar" onchange="applyChartSettings()"> 가로 막대</label>
+      <label class="cp-opt"><input type="radio" name="reasonType" value="doughnut" onchange="applyChartSettings()"> 도넛</label>
+    </div>
+  </div>
 </div>
 
 <div class="input-wrap" id="inputWrap">
@@ -249,9 +304,7 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   </div>
 
   <!-- 2~3. 세부분석 1행 (시점별 + 직종별) -->
-  <div class="chart-grid chart-row" style="margin-bottom:14px;">
-    <div>
-      <div class="section-title" style="font-size:12px;"><span class="section-num">2</span> 시점별 환자확인율(단위: %)</div>
+  <div class="chart-grid chart-row chart-page-break" style="margin-bottom:14px;"> 환자확인율(단위: %)</div>
       <div class="chart-card">
         <canvas id="timeChart" height="130"></canvas>
       </div>
@@ -592,6 +645,115 @@ function renderReport(data,prev,prev2){
   document.getElementById('inputWrap').style.display='none';
   document.getElementById('reportBody').classList.add('show');
   document.getElementById('wordBtn').style.display='inline-flex';
+  document.getElementById('chartSettingBtn').style.display='inline-flex';
+}
+
+// 그래프 설정 패널
+function toggleChartPanel(){
+  const p=document.getElementById('chartPanel');
+  p.style.display=p.style.display==='none'?'flex':'none';
+}
+
+const COLOR_THEMES={
+  default:{good:'rgba(14,107,79,0.82)',warn:'rgba(217,119,6,0.82)',bad:'rgba(176,48,48,0.82)',
+    line:['rgba(26,95,168,0.9)','rgba(14,107,79,0.7)','rgba(150,150,150,0.7)'],
+    multi:['rgba(26,95,168,0.75)','rgba(14,107,79,0.6)','rgba(180,180,180,0.6)'],
+    reason:'rgba(145,153,168,0.65)',reasonHi:'rgba(176,48,48,0.82)'},
+  blue:{good:'rgba(30,100,200,0.85)',warn:'rgba(96,165,250,0.85)',bad:'rgba(147,197,253,0.85)',
+    line:['rgba(30,100,200,0.9)','rgba(96,165,250,0.8)','rgba(191,219,254,0.8)'],
+    multi:['rgba(30,100,200,0.8)','rgba(96,165,250,0.7)','rgba(191,219,254,0.6)'],
+    reason:'rgba(147,197,253,0.65)',reasonHi:'rgba(30,100,200,0.85)'},
+  mono:{good:'rgba(55,65,81,0.85)',warn:'rgba(107,114,128,0.75)',bad:'rgba(209,213,219,0.85)',
+    line:['rgba(30,30,30,0.9)','rgba(100,100,100,0.8)','rgba(180,180,180,0.7)'],
+    multi:['rgba(55,65,81,0.8)','rgba(107,114,128,0.65)','rgba(200,200,200,0.6)'],
+    reason:'rgba(180,180,180,0.65)',reasonHi:'rgba(55,65,81,0.85)'}
+};
+
+function getTheme(){return COLOR_THEMES[document.querySelector('input[name=colorTheme]:checked')?.value||'default'];}
+function getRateColor(r,theme){return parseFloat(r)>=90?theme.good:parseFloat(r)>=70?theme.warn:theme.bad;}
+
+function applyChartSettings(){
+  if(!parsedData) return;
+  const theme=getTheme();
+  const month=document.getElementById('metaMonth').value;
+
+  // 부서별
+  const deptType=document.querySelector('input[name=deptType]:checked').value;
+  const dl=parsedData.dept.map(d=>d.name),dr=parsedData.dept.map(d=>parseFloat(d.rate));
+  if(chartInsts.dept) chartInsts.dept.destroy();
+  chartInsts.dept=new Chart(document.getElementById('deptChart').getContext('2d'),{
+    type:deptType,
+    data:{labels:dl,datasets:[
+      {label:'확인율(%)',data:dr,
+        backgroundColor:deptType==='bar'?dr.map(r=>getRateColor(r,theme)):'transparent',
+        borderColor:deptType==='line'?dr.map(r=>getRateColor(r,theme)):undefined,
+        pointBackgroundColor:deptType==='line'?dr.map(r=>getRateColor(r,theme)):undefined,
+        borderRadius:3,tension:0.3,pointRadius:deptType==='line'?5:0,fill:false,order:2},
+      {label:'목표(90%)',data:Array(dl.length).fill(90),type:'line',
+        borderColor:'rgba(26,95,168,0.7)',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false,order:1}
+    ]},
+    plugins:[labelPlugin],
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}}},
+      scales:{y:{min:0,max:110,ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // 시점별
+  const timeType=document.querySelector('input[name=timeType]:checked').value;
+  const tl=parsedData.time.map(t=>t.name),tr_=parsedData.time.map(t=>parseFloat(t.rate));
+  if(chartInsts.time) chartInsts.time.destroy();
+  chartInsts.time=new Chart(document.getElementById('timeChart').getContext('2d'),{
+    type:timeType,
+    data:{labels:tl,datasets:[{label:'확인율(%)',data:tr_,
+      backgroundColor:timeType==='bar'?tr_.map(r=>getRateColor(r,theme)):'transparent',
+      borderColor:timeType==='line'?theme.line[0]:undefined,
+      pointBackgroundColor:timeType==='line'?tr_.map(r=>getRateColor(r,theme)):undefined,
+      borderRadius:3,tension:0.3,pointRadius:timeType==='line'?4:0,fill:false}]},
+    plugins:[labelPlugin],
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:110,ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // 직종별
+  const jobType=document.querySelector('input[name=jobType]:checked').value;
+  const jl=parsedData.job.map(j=>j.name),jr=parsedData.job.map(j=>parseFloat(j.rate));
+  const jDatasets=[{label:month||'이번달',data:jr,
+    borderColor:theme.line[0],backgroundColor:jobType==='bar'?jr.map(r=>getRateColor(r,theme)):'rgba(26,95,168,0.1)',
+    tension:0.3,pointRadius:4,pointBackgroundColor:theme.line[0],borderRadius:3,fill:false}];
+  if(parsedPrev&&parsedPrev.job.length>0) jDatasets.unshift({label:parsedPrev.month||'전월',
+    data:jl.map(n=>parseFloat(parsedPrev.job.find(j=>j.name===n)?.rate||'0')),
+    borderColor:theme.line[1],backgroundColor:theme.multi[1],tension:0.3,pointRadius:4,borderDash:[4,3],borderRadius:3,fill:false});
+  if(parsedPrev2&&parsedPrev2.job.length>0) jDatasets.unshift({label:parsedPrev2.month||'전전월',
+    data:jl.map(n=>parseFloat(parsedPrev2.job.find(j=>j.name===n)?.rate||'0')),
+    borderColor:theme.line[2],backgroundColor:theme.multi[2],tension:0.3,pointRadius:4,borderDash:[2,4],borderRadius:3,fill:false});
+  if(chartInsts.job) chartInsts.job.destroy();
+  chartInsts.job=new Chart(document.getElementById('jobChart').getContext('2d'),{
+    type:jobType,
+    data:{labels:jl,datasets:jDatasets},
+    plugins:[jobType==='line'?lineLabel:labelPlugin],
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}}},
+      scales:{y:{min:0,max:110,ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // 미수행사유
+  const reasonType=document.querySelector('input[name=reasonType]:checked').value;
+  const rsns=parsedData.reasons.filter(r=>r.count>0);
+  const rsl=rsns.map(r=>r.name),rsr=rsns.map(r=>parseFloat(r.rate)||0);
+  const maxIdx=rsr.indexOf(Math.max(...rsr));
+  if(chartInsts.reason) chartInsts.reason.destroy();
+  const isDoughnut=reasonType==='doughnut';
+  const isHoriz=reasonType==='horizontalBar';
+  chartInsts.reason=new Chart(document.getElementById('reasonChart').getContext('2d'),{
+    type:isDoughnut?'doughnut':'bar',
+    data:{labels:rsl,datasets:[{label:'비율(%)',data:rsr,
+      backgroundColor:isDoughnut
+        ?[theme.reasonHi,theme.reason,theme.line[1],theme.line[2],...Array(10).fill(theme.reason)]
+        :rsr.map((_,i)=>i===maxIdx?theme.reasonHi:theme.reason),
+      borderRadius:3}]},
+    plugins:[isDoughnut?{}:labelPlugin],
+    options:{indexAxis:isHoriz?'y':'x',responsive:true,
+      plugins:{legend:{display:isDoughnut,position:'right',labels:{font:{size:10},boxWidth:12}}},
+      scales:isDoughnut?{}:{y:{ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
 }
 
 function generateSummary(data,prev,month){
