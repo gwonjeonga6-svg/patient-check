@@ -125,8 +125,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
   .summary-box{page-break-inside:avoid;}
   .dept-table{font-size:9px;}
   .dept-table th,.dept-table td{padding:3px 4px;}
-  canvas{max-height:160px!important;}
+  canvas{max-height:150px!important;}
   .chart-grid,.chart-grid-3{grid-template-columns:1fr 1fr!important;}
+  .chart-row{page-break-inside:avoid;break-inside:avoid;}
+  .chart-row .section-title{page-break-after:avoid;break-after:avoid;}
+  .chart-row .chart-card{page-break-inside:avoid;break-inside:avoid;}
   .section-num{width:16px;height:16px;font-size:10px;}
   .target-badge{font-size:9px;}
   .summary-result{padding:10px 14px;}
@@ -205,8 +208,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
     </div>
   </div>
 
-  <!-- 2~5. 세부분석 2열 그리드 -->
-  <div class="chart-grid" style="margin-bottom:14px;">
+  <!-- 2~3. 세부분석 1행 (시점별 + 직종별) -->
+  <div class="chart-grid chart-row" style="margin-bottom:14px;">
     <div>
       <div class="section-title" style="font-size:12px;"><span class="section-num">2</span> 시점별 환자확인율(단위: %)</div>
       <div class="chart-card">
@@ -219,6 +222,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
         <canvas id="jobChart" height="130"></canvas>
       </div>
     </div>
+  </div>
+
+  <!-- 4~5. 세부분석 2행 (연차별 + 미수행사유) -->
+  <div class="chart-grid chart-row" style="margin-bottom:14px;">
     <div>
       <div class="section-title" style="font-size:12px;"><span class="section-num">4</span> 연차별 환자확인율(단위: %)</div>
       <div class="chart-card">
