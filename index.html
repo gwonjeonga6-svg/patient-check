@@ -165,7 +165,7 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   /* 그래프: 인쇄 시 1열 세로 배치 */
   .chart-grid{display:block!important;}
   .chart-grid > div{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
-  .print-chart-img{max-height:220px;width:100%;object-fit:contain;}
+  .print-chart-img{width:100%!important;height:auto!important;min-height:200px;display:block!important;}
 
   /* 캔버스는 이미지로 대체되므로 숨김 */
   canvas{display:none!important;}
@@ -1227,35 +1227,32 @@ ${improveSection}${issueSection}
 function printReport(){
   if(!parsedData){ window.print(); return; }
 
-  // 1. 차트 최신 상태로 렌더
   applyChartSettings();
 
   setTimeout(()=>{
-    // 2. 모든 캔버스를 img로 교체
     const canvases = document.querySelectorAll('canvas');
     const replacements = [];
     canvases.forEach(canvas=>{
+      // 캔버스가 실제로 그려졌는지 확인 (너비/높이 > 0)
+      if(canvas.width === 0 || canvas.height === 0) return;
       const img = document.createElement('img');
-      img.src = canvas.toDataURL('image/png');
-      img.style.width = '100%';
-      img.style.display = 'block';
+      img.src = canvas.toDataURL('image/png', 1.0);
+      img.style.cssText = 'width:100%;height:auto;display:block;min-height:180px;object-fit:contain;';
       img.className = 'print-chart-img';
       canvas.parentNode.insertBefore(img, canvas);
       canvas.style.display = 'none';
       replacements.push({canvas, img});
     });
 
-    // 3. 인쇄
     window.print();
 
-    // 4. 인쇄 후 원복
     setTimeout(()=>{
       replacements.forEach(({canvas, img})=>{
         img.remove();
         canvas.style.display = '';
       });
-    }, 500);
-  }, 300);
+    }, 1000);
+  }, 600);
 }
 
 // 브라우저가 HTML 파일을 새 탭으로 여는 기본 동작 전역 차단
