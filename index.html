@@ -146,35 +146,38 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   .report-body{padding:4px 12px!important;display:block!important;}
   body{background:#fff;font-size:10px;}
   .rpt-footer{display:none!important;}
-  .rpt-title-box{border:2px solid #333;margin-bottom:12px;padding:12px;}
-  .rpt-main-title{font-size:16px;}
-  .section-title{font-size:12px;margin-bottom:6px;page-break-after:avoid;break-after:avoid;}
-  .section{margin-bottom:14px;}
-  .summary-box{page-break-inside:avoid;break-inside:avoid;}
-  .dept-table{font-size:9px;}
-  .dept-table th,.dept-table td{padding:3px 4px;}
-  .section-num{width:16px;height:16px;font-size:10px;}
-  .target-badge{font-size:9px;}
-  .summary-result{padding:10px 14px;}
-  .sr-text{font-size:11px;line-height:1.8;}
-  .tool-table{font-size:10px;}
-  .sb-table td,.sb-table th{padding:5px 8px;}
-  .big-num{font-size:16px!important;}
-  .chart-card{padding:8px 12px;margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
+  .rpt-title-box{border:2px solid #333;margin-bottom:8px;padding:10px;}
+  .rpt-main-title{font-size:15px;}
+  .section-title{font-size:11px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;}
+  .section{margin-bottom:10px;}
+  .summary-box{page-break-inside:avoid;break-inside:avoid;margin-bottom:8px;}
+  .dept-table{font-size:8.5px;}
+  .dept-table th,.dept-table td{padding:2px 3px;}
+  .section-num{width:15px;height:15px;font-size:9px;}
+  .target-badge{font-size:8px;}
+  .summary-result{padding:8px 12px;}
+  .sr-text{font-size:10px;line-height:1.7;}
+  .tool-table{font-size:9.5px;}
+  .sb-table td,.sb-table th{padding:4px 6px;}
+  .big-num{font-size:14px!important;}
+  .chart-card{padding:6px 10px;margin-bottom:6px;}
+  .obs-dept{font-size:9px;}
 
-  /* 그래프: 인쇄 시 1열 세로 배치 */
-  .chart-grid{display:block!important;}
-  .chart-grid > div{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
-  .print-chart-img{width:100%!important;height:auto!important;min-height:200px;display:block!important;}
+  /* 1페이지: 부서막대 + 표 함께 */
+  .section{page-break-inside:avoid;break-inside:avoid;}
 
-  /* 인쇄 시 캔버스 숨김, 미리만든 img 표시 */
-  canvas{display:none!important;}
-  .pre-print-img{display:block!important;width:100%!important;height:auto!important;}
-  .print-chart-img{display:block!important;width:100%!important;height:auto!important;}
-
-  /* 페이지 분리 */
+  /* 2페이지: 그래프 4개 2열 2행 */
   .chart-page-break{page-break-before:always;break-before:always;}
+  .chart-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;page-break-inside:avoid;break-inside:avoid;}
+  .chart-grid > div{page-break-inside:avoid;break-inside:avoid;}
+  .chart-row{page-break-inside:avoid;break-inside:avoid;}
+
+  /* 3페이지: 확인도구부터 */
   .section-page-break{page-break-before:always;break-before:always;}
+
+  /* 캔버스 숨김, 미리만든 img 표시 */
+  canvas{display:none!important;}
+  .pre-print-img{display:block!important;width:100%!important;height:auto!important;max-height:250px;object-fit:contain;}
 }
 </style>
 </head>
@@ -316,18 +319,17 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
       </div>
       <canvas id="deptChart" height="60"></canvas>
     </div>
-    <!-- 부서 상세표: 2페이지 시작 -->
-    <div class="chart-card section-page-break" style="padding:0;overflow:hidden;">
+    <div class="chart-card" style="padding:0;overflow:hidden;">
       <table class="dept-table" id="deptTable"></table>
     </div>
   </div>
 
-  <!-- 2~3. 세부분석 1행 (시점별 + 직종별) -->
-  <div class="chart-grid chart-row chart-page-break" style="margin-bottom:14px;">
+  <!-- 2~5. 그래프 4개: 2페이지 2열 2행 -->
+  <div class="chart-grid chart-page-break" style="margin-bottom:14px;">
     <div>
       <div class="section-title" style="font-size:12px;">
         <span class="section-num">2</span> 시점별 환자확인율(단위: %)
-        <span class="chart-type-btns no-print" data-target="timeType">
+        <span class="chart-type-btns no-print">
           <button onclick="switchChartType('time','bar',this)" class="ct-btn ct-active">막대</button>
           <button onclick="switchChartType('time','line',this)" class="ct-btn">꺾은선</button>
         </span>
@@ -337,17 +339,13 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
     <div>
       <div class="section-title" style="font-size:12px;">
         <span class="section-num">3</span> 직종별 환자확인율(단위: %)
-        <span class="chart-type-btns no-print" data-target="jobType">
+        <span class="chart-type-btns no-print">
           <button onclick="switchChartType('job','line',this)" class="ct-btn ct-active">꺾은선</button>
           <button onclick="switchChartType('job','bar',this)" class="ct-btn">막대</button>
         </span>
       </div>
       <div class="chart-card"><canvas id="jobChart" height="130"></canvas></div>
     </div>
-  </div>
-
-  <!-- 4~5. 세부분석 2행 (연차별 + 미수행사유) -->
-  <div class="chart-grid chart-row" style="margin-bottom:14px;">
     <div>
       <div class="section-title" style="font-size:12px;">
         <span class="section-num">4</span> 연차별 환자확인율(단위: %)
