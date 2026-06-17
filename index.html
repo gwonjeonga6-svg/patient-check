@@ -146,6 +146,9 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   .section-title{font-size:12px;margin-bottom:6px;page-break-after:avoid;}
   .section{page-break-inside:avoid;margin-bottom:14px;}
   .chart-card{page-break-inside:avoid;padding:10px 12px;margin-bottom:8px;}
+  /* 1번 섹션: 막대그래프 하단 여백 ↑, 표 상단 여백 ↑ */
+  .section .chart-card:first-of-type{margin-bottom:20px;padding-bottom:16px;}
+  .section .chart-card:nth-of-type(2){margin-top:8px;}
   .summary-box{page-break-inside:avoid;}
   .dept-table{font-size:9px;}
   .dept-table th,.dept-table td{padding:3px 4px;}
@@ -156,6 +159,7 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   .chart-row .chart-card{page-break-inside:avoid;break-inside:avoid;}
   .chart-page-break{page-break-before:always;break-before:always;}
   canvas{max-height:170px!important;}
+  #deptChart{max-height:200px!important;}
   .section-num{width:16px;height:16px;font-size:10px;}
   .target-badge{font-size:9px;}
   .summary-result{padding:10px 14px;}
