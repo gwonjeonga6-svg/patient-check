@@ -149,7 +149,7 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   .rpt-title-box{border:2px solid #333;margin-bottom:12px;padding:12px;}
   .rpt-main-title{font-size:16px;}
   .section-title{font-size:12px;margin-bottom:6px;page-break-after:avoid;break-after:avoid;}
-  .section{margin-bottom:12px;}
+  .section{margin-bottom:14px;}
   .summary-box{page-break-inside:avoid;break-inside:avoid;}
   .dept-table{font-size:9px;}
   .dept-table th,.dept-table td{padding:3px 4px;}
@@ -160,18 +160,18 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   .tool-table{font-size:10px;}
   .sb-table td,.sb-table th{padding:5px 8px;}
   .big-num{font-size:16px!important;}
+  .chart-card{padding:8px 12px;margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;}
 
-  /* 부서별 그래프 */
-  #deptChart{max-height:160px!important;}
-  .chart-card{padding:10px 12px;margin-bottom:10px;}
+  /* 그래프: 인쇄 시 1열 세로 배치 */
+  .chart-grid{display:block!important;}
+  .chart-grid > div{margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;}
+  .print-chart-img{max-height:220px;width:100%;object-fit:contain;}
 
-  /* 그래프 4개: 인쇄 시 2열 2행으로 */
-  .chart-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important;}
-  .chart-row{page-break-inside:avoid;break-inside:avoid;margin-bottom:10px;}
-  canvas{max-height:130px!important;}
+  /* 캔버스는 이미지로 대체되므로 숨김 */
+  canvas{display:none!important;}
 
   /* 페이지 분리 */
-  .chart-page-break{page-break-before:always;break-before:always;margin-top:0;}
+  .chart-page-break{page-break-before:always;break-before:always;}
   .section-page-break{page-break-before:always;break-before:always;}
 }
 </style>
@@ -1225,19 +1225,42 @@ ${improveSection}${issueSection}
 }
 
 function printReport(){
-  if(parsedData){
-    applyChartSettings();
-    setTimeout(()=>window.print(), 400);
-  } else {
+  if(!parsedData){ window.print(); return; }
+
+  // 1. 차트 최신 상태로 렌더
+  applyChartSettings();
+
+  setTimeout(()=>{
+    // 2. 모든 캔버스를 img로 교체
+    const canvases = document.querySelectorAll('canvas');
+    const replacements = [];
+    canvases.forEach(canvas=>{
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.style.width = '100%';
+      img.style.display = 'block';
+      img.className = 'print-chart-img';
+      canvas.parentNode.insertBefore(img, canvas);
+      canvas.style.display = 'none';
+      replacements.push({canvas, img});
+    });
+
+    // 3. 인쇄
     window.print();
-  }
+
+    // 4. 인쇄 후 원복
+    setTimeout(()=>{
+      replacements.forEach(({canvas, img})=>{
+        img.remove();
+        canvas.style.display = '';
+      });
+    }, 500);
+  }, 300);
 }
 
 // 브라우저가 HTML 파일을 새 탭으로 여는 기본 동작 전역 차단
 window.addEventListener('dragover', function(e){ e.preventDefault(); });
 window.addEventListener('drop', function(e){ e.preventDefault(); });
-// 인쇄 전 차트 강제 재렌더
-window.addEventListener('beforeprint', function(){ if(parsedData) applyChartSettings(); });
 </script>
 </body>
 </html>
