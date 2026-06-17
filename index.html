@@ -107,7 +107,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
   .editable-card{border:1px solid var(--gray-200)!important;border-style:solid!important;}
   .editable-hint{display:none;}
 }
-.sr-text{font-size:13px;line-height:2;color:var(--gray-900);}
+.step-card{background:#fff;border:1px solid var(--gray-200);border-radius:10px;padding:20px 24px;margin-bottom:14px;}
+.step-label{font-size:11px;font-weight:700;color:var(--blue);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;}
+.month-select-wrap{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.month-sel-label{font-size:11px;font-weight:600;color:var(--gray-600);margin-bottom:5px;}
+.month-sel{width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;background:#fff;cursor:pointer;}
+.month-sel:focus{outline:none;border-color:var(--blue);}
+border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .15s;background:var(--gray-50);}
+.upload-area:hover,.input-card.drag-over .upload-area{border-color:var(--blue);background:#eff6ff;}
+.upload-icon{font-size:28px;margin-bottom:6px;}
+.upload-text{font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:4px;}
+.upload-sub{font-size:11px;color:var(--gray-400);}
+.upload-area.loaded{border-color:var(--green);background:#f0fdf4;}
+.upload-area.loaded .upload-icon::after{content:' ✅';}
+
 
 /* 푸터 */
 .rpt-footer{background:#0f4080;color:rgba(255,255,255,0.45);padding:10px 28px;display:flex;justify-content:space-between;font-size:11px;flex-wrap:wrap;gap:6px;margin-top:20px;}
@@ -152,32 +165,58 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
 </div>
 
 <div class="input-wrap" id="inputWrap">
-  <div class="meta-row">
-    <div class="meta-field">
-      <label>보고월 (예: 2026년 1월)</label>
-      <input type="text" id="metaMonth" placeholder="예) 2026년 1월">
+  <!-- STEP 1: 파일 업로드 -->
+  <div class="step-card" id="step1Card">
+    <div class="step-label">STEP 1 &nbsp;원자료 파일 업로드</div>
+    <div class="upload-area" id="mainDropZone"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="handleRawDrop(event)"
+      onclick="document.getElementById('rawFileInput').click()">
+      <div class="upload-icon">📂</div>
+      <div class="upload-text" id="uploadText">클릭하거나 파일을 끌어다 놓으세요</div>
+      <div class="upload-sub">Google Sheets에서 다운로드한 <strong>원자료.html</strong></div>
     </div>
-    <div class="meta-field">
-      <label>작성자</label>
-      <input type="text" id="metaAuthor" placeholder="예) 권정아">
-    </div>
+    <input type="file" id="rawFileInput" accept=".html,.htm" style="display:none" onchange="handleRawFile(this.files[0])">
   </div>
-  <div class="input-grid">
-    <div class="input-card">
-      <div class="ic-label"><span class="ic-badge ic-current">이번 달</span> 월별집계 데이터</div>
-      <textarea class="iz-textarea" id="pasteArea" placeholder="Google Sheets 월별집계 시트 전체 선택(Ctrl+A) → 복사(Ctrl+C) → 여기에 붙여넣기"></textarea>
+
+  <!-- STEP 2: 월 선택 (파일 로드 후 표시) -->
+  <div class="step-card" id="step2Card" style="display:none;">
+    <div class="step-label">STEP 2 &nbsp;보고월 선택</div>
+    <div class="month-select-wrap">
+      <div>
+        <div class="month-sel-label">이번 달 <span style="color:var(--red)">*필수</span></div>
+        <select id="selCurrent" class="month-sel" onchange="onMonthSelect()">
+          <option value="">— 선택 —</option>
+        </select>
+      </div>
+      <div>
+        <div class="month-sel-label">전월 <span style="color:var(--gray-400);font-size:10px;">(선택)</span></div>
+        <select id="selPrev" class="month-sel">
+          <option value="">— 없음 —</option>
+        </select>
+      </div>
+      <div>
+        <div class="month-sel-label">전전월 <span style="color:var(--gray-400);font-size:10px;">(선택)</span></div>
+        <select id="selPrev2" class="month-sel">
+          <option value="">— 없음 —</option>
+        </select>
+      </div>
     </div>
-    <div class="input-card">
-      <div class="ic-label"><span class="ic-badge ic-prev">전월</span> 월별집계 데이터 <span style="font-weight:400;color:var(--gray-400);font-size:10px;">(선택)</span></div>
-      <textarea class="iz-textarea" id="pasteAreaPrev" placeholder="전월 데이터 (직종별/연차별 3개월 추이용)"></textarea>
+    <div class="meta-row" style="margin-top:12px;">
+      <div class="meta-field">
+        <label>보고월 표시명</label>
+        <input type="text" id="metaMonth" placeholder="예) 2026년 3월">
+      </div>
+      <div class="meta-field">
+        <label>작성자</label>
+        <input type="text" id="metaAuthor" placeholder="예) 기규정">
+      </div>
     </div>
-    <div class="input-card">
-      <div class="ic-label"><span class="ic-badge ic-prev2">전전월</span> 월별집계 데이터 <span style="font-weight:400;color:var(--gray-400);font-size:10px;">(선택)</span></div>
-      <textarea class="iz-textarea" id="pasteAreaPrev2" placeholder="전전월 데이터 (직종별/연차별 3개월 추이용)"></textarea>
+    <div class="iz-actions">
+      <button class="btn btn-primary" id="generateBtn" onclick="generateFromRaw()" disabled>📊 보고서 생성</button>
+      <span id="fileStatus" style="font-size:12px;color:var(--gray-400);margin-left:10px;"></span>
     </div>
-  </div>
-  <div class="iz-actions">
-    <button class="btn btn-primary" onclick="parseAndRender()">📊 보고서 생성</button>
   </div>
 </div>
 
@@ -620,6 +659,248 @@ function generateSummary(data,prev,month){
   document.getElementById('summaryText').innerHTML=html;
 }
 
+// 원자료 파일 처리
+let rawAllRows = [];  // 전체 원자료 행
+
+function handleRawDrop(e){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file) handleRawFile(file);
+}
+
+function handleRawFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(e.target.result, 'text/html');
+    const rows = [];
+    doc.querySelectorAll('tr').forEach(tr => {
+      const cells = [];
+      tr.querySelectorAll('td,th').forEach(td => cells.push(td.textContent.trim()));
+      if(cells.some(c=>c)) rows.push(cells);
+    });
+    // 첫 컬럼이 숫자(행번호)면 제거
+    rawAllRows = rows.map(r => /^\d+$/.test(r[0]) ? r.slice(1) : r);
+
+    // 헤더 제외, 월 목록 추출
+    const months = [...new Set(
+      rawAllRows.slice(1)
+        .map(r => r[0])
+        .filter(m => m && m !== '월' && /^\d{4}-\d{2}$/.test(m))
+    )].sort().reverse();  // 최신 월 먼저
+
+    if(months.length === 0){
+      alert('월 데이터를 찾을 수 없어요. 원자료.html 파일인지 확인해주세요.');
+      return;
+    }
+
+    // 파일 로드 성공 표시
+    document.getElementById('uploadText').textContent = '✅ ' + file.name;
+    document.getElementById('mainDropZone').classList.add('loaded');
+
+    // 셀렉트박스 채우기
+    ['selCurrent','selPrev','selPrev2'].forEach((id,i) => {
+      const sel = document.getElementById(id);
+      const defaultOpt = i===0 ? '— 선택 —' : '— 없음 —';
+      sel.innerHTML = `<option value="">${defaultOpt}</option>`;
+      months.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m.replace('-0','-').replace(/(\d{4})-(\d+)/,'$1년 $2월');
+        sel.appendChild(opt);
+      });
+      // 순서대로 자동 선택
+      if(months[i]) sel.value = months[i];
+    });
+
+    // 보고월 표시명 자동 입력
+    if(months[0]){
+      const [y,m] = months[0].split('-');
+      document.getElementById('metaMonth').value = `${y}년 ${parseInt(m)}월`;
+    }
+
+    document.getElementById('step2Card').style.display = 'block';
+    document.getElementById('generateBtn').disabled = false;
+    document.getElementById('fileStatus').textContent = `${months.length}개월 데이터 로드 완료`;
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function onMonthSelect(){
+  const m = document.getElementById('selCurrent').value;
+  if(m){
+    const [y,mo] = m.split('-');
+    document.getElementById('metaMonth').value = `${y}년 ${parseInt(mo)}월`;
+    document.getElementById('generateBtn').disabled = false;
+  } else {
+    document.getElementById('generateBtn').disabled = true;
+  }
+}
+
+// 원자료 → 통계 집계
+function aggregateRawData(targetMonth){
+  const CAREER_MAP = {
+    '1년차 미만':'1년차미만','1년차미만':'1년차미만',
+    '1년차~3년차 미만':'1년차~3년차미만','1년차~3년차미만':'1년차~3년차미만',
+    '3년차 이상':'3년차이상','3년차이상':'3년차이상'
+  };
+  const rows = rawAllRows.slice(1).filter(r => r[0] === targetMonth);
+  if(rows.length === 0) return null;
+
+  const total = rows.length;
+  const confirmed = rows.filter(r => r[7]==='YES').length;
+  const unconfirmed = total - confirmed;
+  const rate = (confirmed/total*100).toFixed(1)+'%';
+
+  function groupBy(keyIdx, confIdx){
+    const map = {};
+    rows.forEach(r => {
+      const k = r[keyIdx]||'기타';
+      if(!map[k]) map[k]={obs:0,conf:0};
+      map[k].obs++;
+      if(r[confIdx]==='YES') map[k].conf++;
+    });
+    return Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0],'ko'))
+      .map(([name,v])=>({name,obs:v.obs,conf:v.conf,rate:(v.conf/v.obs*100).toFixed(1)+'%'}));
+  }
+
+  // 부서별 (확인여부: col7)
+  const dept = groupBy(1, 7);
+  // 시점별
+  const time = groupBy(2, 7);
+  // 직종별
+  const job = groupBy(3, 7);
+  // 경력별 (정규화)
+  const careerMap = {};
+  rows.forEach(r => {
+    const k = CAREER_MAP[r[4]] || r[4] || '기타';
+    if(!careerMap[k]) careerMap[k]={obs:0,conf:0};
+    careerMap[k].obs++;
+    if(r[7]==='YES') careerMap[k].conf++;
+  });
+  const careerOrder = ['1년차미만','1년차~3년차미만','3년차이상'];
+  const career = careerOrder.filter(k=>careerMap[k]).map(k=>({
+    name:k, obs:careerMap[k].obs, conf:careerMap[k].conf,
+    rate:(careerMap[k].conf/careerMap[k].obs*100).toFixed(1)+'%'
+  }));
+
+  // 미수행사유
+  const rMap = {};
+  rows.filter(r=>r[7]==='NO' && r[11]).forEach(r=>{
+    const k=r[11].trim();
+    rMap[k]=(rMap[k]||0)+1;
+  });
+  const rTotal = Object.values(rMap).reduce((s,v)=>s+v,0)||1;
+  const reasons = Object.entries(rMap).map(([name,count])=>({name,count,rate:(count/rTotal*100).toFixed(1)+'%'}));
+
+  // 환자도구
+  const ptMap = {};
+  rows.filter(r=>r[7]==='YES' && r[8]).forEach(r=>{
+    r[8].split(',').forEach(t=>{t=t.trim();if(t)ptMap[t]=(ptMap[t]||0)+1;});
+  });
+  const patientTools = Object.entries(ptMap).map(([name,count])=>({name,count}));
+
+  // 직원도구
+  const stMap = {};
+  rows.filter(r=>r[7]==='YES' && r[9]).forEach(r=>{
+    r[9].split(',').forEach(t=>{t=t.trim();if(t)stMap[t]=(stMap[t]||0)+1;});
+  });
+  const staffTools = Object.entries(stMap).map(([name,count])=>({name,count}));
+
+  // 개방형 (col5)
+  const openDept = groupBy(1, 5);
+  // 대조확인 (col6)
+  const crossDept = groupBy(1, 6);
+
+  return {month:targetMonth, total, confirmed, unconfirmed, rate,
+    dept, time, job, career, reasons, patientTools, staffTools, openDept, crossDept};
+}
+
+function generateFromRaw(){
+  const cur = document.getElementById('selCurrent').value;
+  if(!cur){alert('이번 달을 선택해주세요!');return;}
+  const data = aggregateRawData(cur);
+  if(!data){alert('해당 월 데이터가 없어요.');return;}
+  const prev = document.getElementById('selPrev').value ? aggregateRawData(document.getElementById('selPrev').value) : null;
+  const prev2 = document.getElementById('selPrev2').value ? aggregateRawData(document.getElementById('selPrev2').value) : null;
+  renderReport(data, prev, prev2);
+}
+
+function toggleSection
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    rawFiles[type] = e.target.result;
+    const labels = {current:'uploadText', prev:'uploadTextPrev', prev2:'uploadTextPrev2'};
+    const el = document.getElementById(labels[type]);
+    el.textContent = '✅ ' + file.name;
+    el.closest('.upload-area').classList.add('loaded');
+    if(rawFiles.current){
+      document.getElementById('generateBtn').disabled = false;
+      document.getElementById('fileStatus').textContent = '이번 달 파일 준비 완료 — 보고서 생성을 눌러주세요!';
+    }
+    // 보고월 자동 감지
+    if(type === 'current'){
+      const monthMatch = e.target.result.match(/보고월.*?(\d{4}-\d{2})/);
+      if(monthMatch && !document.getElementById('metaMonth').value){
+        const [y,m] = monthMatch[1].split('-');
+        document.getElementById('metaMonth').value = `${y}년 ${parseInt(m)}월`;
+      }
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function parseHtmlTable(html){
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const rows = [];
+  doc.querySelectorAll('tr').forEach(tr => {
+    const cells = [];
+    tr.querySelectorAll('td,th').forEach(td => cells.push(td.textContent.trim()));
+    if(cells.some(c=>c)) rows.push(cells);
+  });
+  // HTML 테이블은 행번호가 첫 컬럼 — 제거
+  return rows.map(r => r[0] && /^\d+$/.test(r[0]) ? r.slice(1) : r);
+}
+
+function parseDataFromRows(rows){
+  const d={month:'',total:0,confirmed:0,unconfirmed:0,rate:'',
+    dept:[],time:[],job:[],career:[],reasons:[],patientTools:[],staffTools:[],openDept:[],crossDept:[]};
+  let section='';
+  for(const row of rows){
+    const [a='',b='',c='',e=''] = row;
+    if(a==='보고월') d.month=b;
+    if(a==='총 관찰건수') d.total=parseInt(b)||0;
+    if(a==='확인 건수') d.confirmed=parseInt(b)||0;
+    if(a==='미확인 건수') d.unconfirmed=parseInt(b)||0;
+    if(a==='확인율'&&!d.rate) d.rate=b;
+    if(a==='부서'&&b==='관찰'&&c==='확인'){section='dept';continue;}
+    if(a==='시점'&&b==='관찰'){section='time';continue;}
+    if(a==='직종'&&b==='관찰'){section='job';continue;}
+    if(a==='경력'&&b==='관찰'){section='career';continue;}
+    if(a==='미수행 사유'){section='reason';continue;}
+    if(a==='환자도구'){section='ptool';continue;}
+    if(a==='직원도구'){section='stool';continue;}
+    if(a==='개방형'&&b==='관찰'){section='open';continue;}
+    if(a==='대조확인'&&b==='관찰'){section='cross';continue;}
+    if(!a||a==='합계') continue;
+    if(section==='dept'&&b&&c&&e) d.dept.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='time'&&b&&c&&e) d.time.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='job'&&b&&c&&e) d.job.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='career'&&b&&c&&e) d.career.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='reason'&&b) d.reasons.push({name:a,count:parseInt(b)||0,rate:c});
+    if(section==='ptool'&&b&&a!=='합계') d.patientTools.push({name:a,count:parseInt(b)||0});
+    if(section==='stool'&&b&&a!=='합계') d.staffTools.push({name:a,count:parseInt(b)||0});
+    if(section==='open'&&b&&c&&e) d.openDept.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='cross'&&b&&c&&e) d.crossDept.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+  }
+  return d;
+}
+
+
 function toggleSection(type){
   if(type==='improve'){
     const checked=document.getElementById('toggleImprove').checked;
@@ -635,30 +916,74 @@ function toggleSection(type){
 (el){ el.previousElementSibling.style.display='none'; }
 function showHintIfEmpty(el){ if(!el.textContent.trim()) el.previousElementSibling.style.display='block'; }
 
-function parseAndRender(){
-  const text=document.getElementById('pasteArea').value.trim();
-  if(!text){alert('이번 달 데이터를 붙여넣어 주세요!');return;}
-  const data=parseData(text);
-  if(!data.total){alert('데이터 형식을 확인해주세요.');return;}
-  const prev=document.getElementById('pasteAreaPrev').value.trim()?parseData(document.getElementById('pasteAreaPrev').value.trim()):null;
-  const prev2=document.getElementById('pasteAreaPrev2').value.trim()?parseData(document.getElementById('pasteAreaPrev2').value.trim()):null;
-  renderReport(data,prev,prev2);
-}
+
 
 function resetReport(){
   destroyCharts(); parsedData=null; parsedPrev=null; parsedPrev2=null;
-  ['pasteArea','pasteAreaPrev','pasteAreaPrev2'].forEach(id=>document.getElementById(id).value='');
+  rawAllRows = [];
+  document.getElementById('uploadText').textContent='클릭하거나 파일을 끌어다 놓으세요';
+  document.getElementById('mainDropZone').classList.remove('loaded');
+  document.getElementById('step2Card').style.display='none';
+  document.getElementById('generateBtn').disabled=true;
+  document.getElementById('fileStatus').textContent='';
   document.getElementById('reportBody').classList.remove('show');
   document.getElementById('inputWrap').style.display='block';
   document.getElementById('wordBtn').style.display='none';
 }
 
 function loadSample(){
-  const s=`항목\t값\n보고월\t2026-01\n\n\n항목\t값\n총 관찰건수\t400\n확인 건수\t359\n미확인 건수\t41\n확인율\t89.8%\n\n부서\t관찰\t확인\t확인율\n원무팀\t20\t18\t90.0%\n건강증진팀\t20\t17\t85.0%\n외래\t20\t13\t65.0%\n응급실\t20\t10\t50.0%\n중환자실\t20\t20\t100.0%\n내시경실\t20\t20\t100.0%\n6병동\t20\t16\t80.0%\n7병동\t20\t17\t85.0%\n8병동\t20\t20\t100.0%\n9병동\t20\t18\t90.0%\n10병동\t20\t19\t95.0%\n11병동\t20\t15\t75.0%\n12병동\t20\t19\t95.0%\n13병동\t20\t19\t95.0%\n15병동\t20\t20\t100.0%\n영상\t20\t20\t100.0%\n진검\t20\t20\t100.0%\n혈관\t20\t18\t90.0%\n수술실\t20\t20\t100.0%\n재활\t20\t20\t100.0%\n합계\t400\t359\t89.8%\n\n시점\t관찰\t확인\t확인율\n원무접수전\t11\t10\t90.0%\n원무수납전\t7\t7\t100.0%\n서류발급전\t10\t10\t100.0%\n외래접수전\t6\t4\t66.7%\n외래진료전\t20\t18\t90.8%\n의약품투여전\t102\t87\t85.3%\n혈액제제투여전\t14\t14\t100.0%\n검사전\t113\t105\t92.9%\n처치전\t42\t36\t85.7%\n시술전\t16\t14\t87.5%\n수술전\t30\t30\t100.0%\n환자인식팔찌착용전\t19\t19\t100.0%\n이송전\t15\t11\t73.3%\n\n직종\t관찰\t확인\t확인율\n전문의\t9\t7\t77.8%\n전공의\t2\t2\t100.0%\n간호사\t253\t230\t90.9%\n간호조무사\t34\t26\t76.5%\n요양보호사\t3\t3\t100.0%\n방사선사\t27\t27\t100.0%\n임상병리사\t22\t22\t100.0%\n재활치료사\t20\t20\t100.0%\n원무직원\t28\t28\t100.0%\n이송직원\t2\t1\t50.0%\n\n경력\t관찰\t확인\t확인율\n1년차미만\t8\t7\t87.5%\n1년차~3년차미만\t30\t27\t90.0%\n3년차이상\t81\t73\t90.1%\n\n미수행 사유\t건수\t비율\n습관적생략\t6\t14.6%\n알고있는환자\t16\t39.0%\n환자확인방법모름\t0\t0.0%\n환자비협조\t6\t14.6%\n1인대기\t5\t12.2%\n대조도구없음\t1\t2.4%\n바빠서\t7\t17.1%\n합계\t41\t100.0%\n\n환자도구\t건수\n접수예약증\t48\n영수증\t4\n진료순서안내지\t30\n환자인식팔찌\t245\n환자or보호자암기\t29\n문진표\t2\n신분증\t6\n\n직원도구\t건수\n전산\t129\n검사처치확인표\t54\nflowsheet\t0\n투약라벨\t90\n검사라벨\t27\n수혈라벨\t11\n수술시술전확인표\t31\n약봉투\t10\n이송의뢰지\t12\n\n개방형\t관찰\t확인\t확인율\n원무팀\t20\t18\t90.0%\n건강증진팀\t20\t18\t90.0%\n외래\t20\t18\t90.0%\n응급실\t20\t11\t55.0%\n중환자실\t20\t20\t100.0%\n내시경실\t20\t20\t100.0%\n6병동\t20\t16\t80.0%\n7병동\t20\t17\t85.0%\n8병동\t20\t20\t100.0%\n9병동\t20\t18\t90.0%\n10병동\t20\t20\t100.0%\n11병동\t20\t19\t95.0%\n12병동\t20\t19\t95.0%\n13병동\t20\t20\t100.0%\n15병동\t20\t20\t100.0%\n영상\t20\t20\t100.0%\n진검\t20\t20\t100.0%\n혈관\t20\t18\t90.0%\n수술실\t20\t20\t100.0%\n재활\t20\t20\t100.0%\n\n대조확인\t관찰\t확인\t확인율\n원무팀\t20\t20\t100.0%\n건강증진팀\t20\t17\t85.0%\n외래\t20\t13\t65.0%\n응급실\t20\t10\t50.0%\n중환자실\t20\t20\t100.0%\n내시경실\t20\t20\t100.0%\n6병동\t20\t16\t80.0%\n7병동\t20\t17\t85.0%\n8병동\t20\t20\t100.0%\n9병동\t20\t18\t90.0%\n10병동\t20\t19\t95.0%\n11병동\t20\t15\t75.0%\n12병동\t20\t20\t100.0%\n13병동\t20\t19\t95.0%\n15병동\t20\t20\t100.0%\n영상\t20\t20\t100.0%\n진검\t20\t20\t100.0%\n혈관\t20\t20\t100.0%\n수술실\t20\t20\t100.0%\n재활\t20\t20\t100.0%`;
-  document.getElementById('pasteArea').value=s;
+  const sampleRows = [
+    ['보고월','2026-01'],
+    ['총 관찰건수','400'],['확인 건수','359'],['미확인 건수','41'],['확인율','89.8%'],
+    ['부서','관찰','확인','확인율'],
+    ['원무팀','20','18','90.0%'],['건강증진팀','20','17','85.0%'],['외래','20','13','65.0%'],
+    ['응급실','20','10','50.0%'],['중환자실','20','20','100.0%'],['내시경실','20','20','100.0%'],
+    ['6병동','20','16','80.0%'],['7병동','20','17','85.0%'],['8병동','20','20','100.0%'],
+    ['9병동','20','18','90.0%'],['10병동','20','19','95.0%'],['11병동','20','15','75.0%'],
+    ['12병동','20','19','95.0%'],['13병동','20','19','95.0%'],['15병동','20','20','100.0%'],
+    ['영상','20','20','100.0%'],['진검','20','20','100.0%'],['혈관','20','18','90.0%'],
+    ['수술실','20','20','100.0%'],['재활','20','20','100.0%'],
+    ['시점','관찰','확인','확인율'],
+    ['원무접수전','11','10','90.0%'],['원무수납전','7','7','100.0%'],['서류발급전','10','10','100.0%'],
+    ['외래접수전','6','4','66.7%'],['외래진료전','20','18','90.8%'],['의약품투여전','102','87','85.3%'],
+    ['혈액제제투여전','14','14','100.0%'],['검사전','113','105','92.9%'],['처치전','42','36','85.7%'],
+    ['시술전','16','14','87.5%'],['수술전','30','30','100.0%'],['환자인식팔찌착용전','19','19','100.0%'],['이송전','15','11','73.3%'],
+    ['직종','관찰','확인','확인율'],
+    ['전문의','9','7','77.8%'],['전공의','2','2','100.0%'],['간호사','253','230','90.9%'],
+    ['간호조무사','34','26','76.5%'],['요양보호사','3','3','100.0%'],['방사선사','27','27','100.0%'],
+    ['임상병리사','22','22','100.0%'],['재활치료사','20','20','100.0%'],['원무직원','28','28','100.0%'],['이송직원','2','1','50.0%'],
+    ['경력','관찰','확인','확인율'],
+    ['1년차미만','8','7','87.5%'],['1년차~3년차미만','30','27','90.0%'],['3년차이상','81','73','90.1%'],
+    ['미수행 사유','건수','비율'],
+    ['습관적생략','6','14.6%'],['알고있는환자','16','39.0%'],['환자확인방법모름','0','0.0%'],
+    ['환자비협조','6','14.6%'],['1인대기','5','12.2%'],['대조도구없음','1','2.4%'],['바빠서','7','17.1%'],
+    ['환자도구','건수'],
+    ['접수예약증','48'],['영수증','4'],['진료순서안내지','30'],['환자인식팔찌','245'],
+    ['환자or보호자암기','29'],['문진표','2'],['신분증','6'],
+    ['직원도구','건수'],
+    ['전산','129'],['검사처치확인표','54'],['flowsheet','0'],['투약라벨','90'],
+    ['검사라벨','27'],['수혈라벨','11'],['수술시술전확인표','31'],['약봉투','10'],['이송의뢰지','12'],
+    ['개방형','관찰','확인','확인율'],
+    ['원무팀','20','18','90.0%'],['건강증진팀','20','18','90.0%'],['외래','20','18','90.0%'],
+    ['응급실','20','11','55.0%'],['중환자실','20','20','100.0%'],['내시경실','20','20','100.0%'],
+    ['6병동','20','16','80.0%'],['7병동','20','17','85.0%'],['8병동','20','20','100.0%'],
+    ['9병동','20','18','90.0%'],['10병동','20','20','100.0%'],['11병동','20','19','95.0%'],
+    ['12병동','20','19','95.0%'],['13병동','20','20','100.0%'],['15병동','20','20','100.0%'],
+    ['영상','20','20','100.0%'],['진검','20','20','100.0%'],['혈관','20','18','90.0%'],
+    ['수술실','20','20','100.0%'],['재활','20','20','100.0%'],
+    ['대조확인','관찰','확인','확인율'],
+    ['원무팀','20','20','100.0%'],['건강증진팀','20','17','85.0%'],['외래','20','13','65.0%'],
+    ['응급실','20','10','50.0%'],['중환자실','20','20','100.0%'],['내시경실','20','20','100.0%'],
+    ['6병동','20','16','80.0%'],['7병동','20','17','85.0%'],['8병동','20','20','100.0%'],
+    ['9병동','20','18','90.0%'],['10병동','20','19','95.0%'],['11병동','20','15','75.0%'],
+    ['12병동','20','20','100.0%'],['13병동','20','19','95.0%'],['15병동','20','20','100.0%'],
+    ['영상','20','20','100.0%'],['진검','20','20','100.0%'],['혈관','20','20','100.0%'],
+    ['수술실','20','20','100.0%'],['재활','20','20','100.0%'],
+  ];
   document.getElementById('metaMonth').value='2026년 1월';
-  parseAndRender();
+  renderReport(parseDataFromRows(sampleRows), null, null);
 }
+
 
 function exportWord(){
   if(!parsedData) return;
