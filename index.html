@@ -788,8 +788,8 @@ function aggregateRawData(targetMonth){
 
   // 미수행사유
   const rMap = {};
-  rows.filter(r=>r[7]==='NO' && r[11]).forEach(r=>{
-    const k=r[11].trim();
+  rows.filter(r=>r[7]==='NO' && r[10]).forEach(r=>{
+    const k=r[10].trim();
     rMap[k]=(rMap[k]||0)+1;
   });
   const rTotal = Object.values(rMap).reduce((s,v)=>s+v,0)||1;
