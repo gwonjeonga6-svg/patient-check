@@ -166,11 +166,10 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
   /* 1페이지: 부서막대 + 표 함께 */
   .section{page-break-inside:avoid;break-inside:avoid;}
 
-  /* 2페이지: 그래프 4개 2열 2행 */
+  /* 2페이지: 그래프 4개 1열 세로 */
   .chart-page-break{page-break-before:always;break-before:always;}
-  .chart-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;page-break-inside:avoid;break-inside:avoid;}
-  .chart-grid > div{page-break-inside:avoid;break-inside:avoid;}
-  .chart-row{page-break-inside:avoid;break-inside:avoid;}
+  .chart-grid{display:block!important;}
+  .chart-grid > div{margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;}
 
   /* 3페이지: 확인도구부터 */
   .section-page-break{page-break-before:always;break-before:always;}
