@@ -113,7 +113,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
 .rpt-footer{background:#0f4080;color:rgba(255,255,255,0.45);padding:10px 28px;display:flex;justify-content:space-between;font-size:11px;flex-wrap:wrap;gap:6px;margin-top:20px;}
 
 @media print{
-  .toolbar,.input-wrap,.btn{display:none!important;}
+  .toolbar,.input-wrap,.btn,.no-print{display:none!important;}
+  .section-hidden{display:none!important;}
   .report-body{padding:4px 10px!important;display:block!important;}
   body{background:#fff;font-size:10px;}
   .rpt-footer{display:none!important;}
@@ -257,26 +258,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Ne
   </div>
 
   <!-- 8. 개선활동 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">8</span> 개선활동</div>
-    <div class="editable-card">
-      <div class="editable-hint">✏️ 클릭하여 입력</div>
-      <div id="editImprove" class="editable-area" contenteditable="true" 
-        onkeydown="removeHint(this)" 
-        onblur="showHintIfEmpty(this)"
-        placeholder="개선활동 내용을 입력하세요..."></div>
+  <div class="section" id="section8">
+    <div class="section-title" style="display:flex;align-items:center;gap:10px;">
+      <span class="section-num">8</span> 개선활동
+      <label class="toggle-label no-print" style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;color:#555;cursor:pointer;">
+        <input type="checkbox" id="toggleImprove" checked onchange="toggleSection('improve')" style="width:15px;height:15px;cursor:pointer;">
+        포함
+      </label>
+    </div>
+    <div id="improveBody">
+      <div class="editable-card">
+        <div class="editable-hint">✏️ 클릭하여 입력</div>
+        <div id="editImprove" class="editable-area" contenteditable="true"
+          onkeydown="removeHint(this)"
+          onblur="showHintIfEmpty(this)"
+          placeholder="개선활동 내용을 입력하세요..."></div>
+      </div>
     </div>
   </div>
 
   <!-- 9. 미비사항 및 향후계획 -->
-  <div class="section">
-    <div class="section-title"><span class="section-num">9</span> 미비사항 및 향후계획</div>
-    <div class="editable-card">
-      <div class="editable-hint">✏️ 클릭하여 입력</div>
-      <div id="editIssue" class="editable-area" contenteditable="true"
-        onkeydown="removeHint(this)"
-        onblur="showHintIfEmpty(this)"
-        placeholder="미비사항 및 향후계획을 입력하세요..."></div>
+  <div class="section" id="section9">
+    <div class="section-title" style="display:flex;align-items:center;gap:10px;">
+      <span class="section-num">9</span> 미비사항 및 향후계획
+      <label class="toggle-label no-print" style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400;color:#555;cursor:pointer;">
+        <input type="checkbox" id="toggleIssue" checked onchange="toggleSection('issue')" style="width:15px;height:15px;cursor:pointer;">
+        포함
+      </label>
+    </div>
+    <div id="issueBody">
+      <div class="editable-card">
+        <div class="editable-hint">✏️ 클릭하여 입력</div>
+        <div id="editIssue" class="editable-area" contenteditable="true"
+          onkeydown="removeHint(this)"
+          onblur="showHintIfEmpty(this)"
+          placeholder="미비사항 및 향후계획을 입력하세요..."></div>
+      </div>
     </div>
   </div>
 
@@ -603,7 +620,19 @@ function generateSummary(data,prev,month){
   document.getElementById('summaryText').innerHTML=html;
 }
 
-function removeHint(el){ el.previousElementSibling.style.display='none'; }
+function toggleSection(type){
+  if(type==='improve'){
+    const checked=document.getElementById('toggleImprove').checked;
+    document.getElementById('improveBody').style.display=checked?'':'none';
+    document.getElementById('section8').classList.toggle('section-hidden',!checked);
+  } else {
+    const checked=document.getElementById('toggleIssue').checked;
+    document.getElementById('issueBody').style.display=checked?'':'none';
+    document.getElementById('section9').classList.toggle('section-hidden',!checked);
+  }
+}
+
+(el){ el.previousElementSibling.style.display='none'; }
 function showHintIfEmpty(el){ if(!el.textContent.trim()) el.previousElementSibling.style.display='block'; }
 
 function parseAndRender(){
@@ -667,7 +696,24 @@ function exportWord(){
       <td style="text-align:center;font-weight:bold;color:${cr&&parseFloat(cr.rate)>=90?'#0e6b4f':'#b03030'}">${cr?cr.rate:'-'}</td>
     </tr>`}).join('');
 
-  const summaryHtml=document.getElementById('summaryText')?.innerHTML||'';
+  const includeImprove = document.getElementById('toggleImprove').checked;
+  const includeIssue = document.getElementById('toggleIssue').checked;
+
+  const improveSection = includeImprove ? `
+<h2>8. 개선활동</h2>
+<div style="border:1px solid #c4cad5;border-radius:4px;padding:12px 14px;min-height:80px;font-size:10pt;line-height:1.8;">
+${improveHtml||'<span style="color:#aaa">-</span>'}
+</div>
+` : '';
+
+  const issueSection = includeIssue ? `
+<h2>${includeImprove?'9':'8'}. 미비사항 및 향후계획</h2>
+<div style="border:1px solid #c4cad5;border-radius:4px;padding:12px 14px;min-height:80px;font-size:10pt;line-height:1.8;">
+${issueHtml||'<span style="color:#aaa">-</span>'}
+</div>
+` : '';
+
+
   const improveHtml=document.getElementById('editImprove')?.innerHTML||'';
   const issueHtml=document.getElementById('editIssue')?.innerHTML||'';
 
@@ -743,15 +789,7 @@ ${Array.from({length:Math.max(d.patientTools.length,d.staffTools.length)}).map((
 ${summaryHtml}
 </div>
 
-<h2>8. 개선활동</h2>
-<div style="border:1px solid #c4cad5;border-radius:4px;padding:12px 14px;min-height:80px;font-size:10pt;line-height:1.8;">
-${improveHtml||'<span style="color:#aaa">-</span>'}
-</div>
-
-<h2>9. 미비사항 및 향후계획</h2>
-<div style="border:1px solid #c4cad5;border-radius:4px;padding:12px 14px;min-height:80px;font-size:10pt;line-height:1.8;">
-${issueHtml||'<span style="color:#aaa">-</span>'}
-</div>
+${improveSection}${issueSection}
 
 <br><br>
 <div style="border:1px solid #c4cad5;padding:12px 14px;min-height:100px;">
