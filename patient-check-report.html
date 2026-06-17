@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>환자확인 모니터링 결과 보고서 — 좋은삼선병원</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --blue:#1a5fa8;--blue-dk:#0f4080;--blue-lt:#eaf1fb;
+  --green:#0e6b4f;--green-lt:#e5f4ee;
+  --amber:#8a5e00;--amber-lt:#fdf5e0;
+  --red:#b03030;--red-lt:#fdf0f0;
+  --gray-50:#f5f6f8;--gray-100:#eceef2;--gray-200:#dde1e9;
+  --gray-400:#9199a8;--gray-500:#6b7280;--gray-700:#374151;--gray-900:#111827;
+  --radius:8px;--shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Apple SD Gothic Neo','맑은 고딕',sans-serif;background:var(--gray-50);color:var(--gray-900);font-size:13px;line-height:1.6;}
+
+/* 툴바 */
+.toolbar{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--gray-200);padding:8px 28px;display:flex;align-items:center;gap:8px;z-index:50;flex-wrap:wrap;}
+.tb-title{font-size:13px;font-weight:700;color:var(--gray-700);flex:1;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid transparent;font-family:inherit;transition:all .12s;white-space:nowrap;}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn-ghost{background:#fff;color:var(--gray-500);border-color:var(--gray-200);}
+.btn-ghost:hover{background:var(--gray-50);}
+.btn-green{background:var(--green);color:#fff;}
+
+/* 입력존 */
+.input-wrap{padding:20px 28px;}
+.input-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.input-card{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);}
+.ic-label{font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.ic-badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;}
+.ic-current{background:var(--blue-lt);color:var(--blue);}
+.ic-prev{background:var(--gray-100);color:var(--gray-500);}
+.ic-prev2{background:#f3f0ff;color:#6d28d9;}
+.iz-textarea{width:100%;height:130px;padding:10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:11px;font-family:monospace;resize:vertical;outline:none;}
+.iz-textarea:focus{border-color:var(--blue);}
+.meta-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.meta-field label{display:block;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;}
+.meta-field input{width:100%;padding:7px 10px;border:1.5px solid var(--gray-200);border-radius:6px;font-size:13px;font-family:inherit;outline:none;}
+.meta-field input:focus{border-color:var(--blue);}
+.iz-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+
+/* 보고서 본문 */
+.report-body{padding:0 28px 24px;display:none;}
+.report-body.show{display:block;}
+
+/* 보고서 제목 */
+.rpt-title-box{background:#fff;border:2px solid var(--gray-200);border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;text-align:center;box-shadow:var(--shadow);}
+.rpt-main-title{font-size:22px;font-weight:900;color:var(--gray-900);letter-spacing:-.3px;}
+.rpt-meta{font-size:12px;color:var(--gray-400);margin-top:6px;}
+
+/* 종합현황 박스 */
+.summary-box{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow);}
+.sb-header{background:var(--gray-100);padding:8px 16px;font-size:12px;font-weight:700;color:var(--gray-700);border-bottom:1px solid var(--gray-200);}
+.sb-table{width:100%;border-collapse:collapse;}
+.sb-table th{background:#f0f4f9;padding:8px 12px;text-align:center;font-size:12px;font-weight:700;border:1px solid var(--gray-200);}
+.sb-table td{padding:10px 12px;text-align:center;border:1px solid var(--gray-200);font-size:13px;}
+.sb-table .big-num{font-size:20px;font-weight:900;}
+.sb-rate-ok{color:var(--green);font-weight:900;}
+.sb-rate-fail{color:var(--red);font-weight:900;}
+.obs-dept{font-size:12px;color:var(--gray-500);padding:8px 16px;border-top:1px solid var(--gray-200);}
+
+/* 섹션 */
+.section{margin-bottom:20px;}
+.section-title{font-size:13px;font-weight:800;color:var(--gray-900);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--gray-200);display:flex;align-items:center;gap:8px;}
+.section-num{background:var(--blue);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;}
+.target-badge{display:inline-flex;align-items:center;background:var(--blue-lt);color:var(--blue);font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px;}
+
+/* 차트 카드 */
+.chart-card{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);margin-bottom:14px;}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.chart-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.cc-title{font-size:12px;font-weight:700;color:var(--gray-700);margin-bottom:10px;}
+
+/* 부서별 테이블 */
+.dept-table{width:100%;border-collapse:collapse;font-size:12px;}
+.dept-table th{background:#f0f4f9;padding:7px 8px;text-align:center;font-weight:700;border:1px solid var(--gray-200);font-size:11px;}
+.dept-table td{padding:6px 8px;text-align:center;border:1px solid var(--gray-100);}
+.dept-table tr:hover td{background:var(--gray-50);}
+.dept-table .dept-name{text-align:left;font-weight:600;}
+.dept-table .total-row td{background:#f0f4f9;font-weight:700;border-top:2px solid var(--gray-200);}
+.rate-ok{color:var(--green);font-weight:700;}
+.rate-warn{color:var(--amber);font-weight:700;}
+.rate-fail{color:var(--red);font-weight:700;}
+.ok-badge{background:var(--green-lt);color:var(--green);font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;}
+.fail-badge{background:var(--red-lt);color:var(--red);font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;}
+.warn-badge{background:var(--amber-lt);color:var(--amber);font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;}
+
+/* 도구 테이블 */
+.tool-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.tool-table{width:100%;border-collapse:collapse;font-size:12px;}
+.tool-table th{background:#f0f4f9;padding:7px 10px;text-align:left;font-weight:700;border:1px solid var(--gray-200);}
+.tool-table td{padding:6px 10px;border:1px solid var(--gray-100);}
+.tool-table td:last-child{text-align:right;font-weight:700;}
+
+/* 종합결과 */
+.summary-result{background:#fff;border:1px solid var(--gray-200);border-radius:var(--radius);padding:18px 22px;box-shadow:var(--shadow);}
+.sr-text{font-size:13px;line-height:2;color:var(--gray-900);}
+
+/* 푸터 */
+.rpt-footer{background:#0f4080;color:rgba(255,255,255,0.45);padding:10px 28px;display:flex;justify-content:space-between;font-size:11px;flex-wrap:wrap;gap:6px;margin-top:20px;}
+
+@media print{
+  .toolbar,.input-wrap,.btn{display:none!important;}
+  .report-body{padding:4px 10px!important;display:block!important;}
+  body{background:#fff;font-size:11px;}
+  .chart-card,.summary-box,.section{break-inside:avoid;}
+  .chart-grid,.chart-grid-3{grid-template-columns:1fr 1fr!important;}
+  .rpt-footer{display:none!important;}
+  .rpt-title-box{border:2px solid #333;margin-bottom:12px;}
+  .rpt-main-title{font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="tb-title">📋 환자확인 모니터링 결과 보고서 — 좋은삼선병원</div>
+  <button class="btn btn-ghost" onclick="loadSample()">📋 샘플 미리보기</button>
+  <button class="btn btn-ghost" onclick="window.print()">🖨 인쇄 / PDF</button>
+  <button class="btn btn-green" onclick="exportWord()" id="wordBtn" style="display:none;">📄 Word 저장</button>
+  <button class="btn btn-ghost" onclick="resetReport()">↺ 초기화</button>
+</div>
+
+<div class="input-wrap" id="inputWrap">
+  <div class="meta-row">
+    <div class="meta-field">
+      <label>보고월 (예: 2026년 1월)</label>
+      <input type="text" id="metaMonth" placeholder="예) 2026년 1월">
+    </div>
+    <div class="meta-field">
+      <label>작성자</label>
+      <input type="text" id="metaAuthor" placeholder="예) 권정아">
+    </div>
+  </div>
+  <div class="input-grid">
+    <div class="input-card">
+      <div class="ic-label"><span class="ic-badge ic-current">이번 달</span> 월별집계 데이터</div>
+      <textarea class="iz-textarea" id="pasteArea" placeholder="Google Sheets 월별집계 시트 전체 선택(Ctrl+A) → 복사(Ctrl+C) → 여기에 붙여넣기"></textarea>
+    </div>
+    <div class="input-card">
+      <div class="ic-label"><span class="ic-badge ic-prev">전월</span> 월별집계 데이터 <span style="font-weight:400;color:var(--gray-400);font-size:10px;">(선택)</span></div>
+      <textarea class="iz-textarea" id="pasteAreaPrev" placeholder="전월 데이터 (직종별/연차별 3개월 추이용)"></textarea>
+    </div>
+    <div class="input-card">
+      <div class="ic-label"><span class="ic-badge ic-prev2">전전월</span> 월별집계 데이터 <span style="font-weight:400;color:var(--gray-400);font-size:10px;">(선택)</span></div>
+      <textarea class="iz-textarea" id="pasteAreaPrev2" placeholder="전전월 데이터 (직종별/연차별 3개월 추이용)"></textarea>
+    </div>
+  </div>
+  <div class="iz-actions">
+    <button class="btn btn-primary" onclick="parseAndRender()">📊 보고서 생성</button>
+  </div>
+</div>
+
+<!-- 보고서 본문 -->
+<div class="report-body" id="reportBody">
+
+  <!-- 제목 -->
+  <div class="rpt-title-box">
+    <div class="rpt-main-title" id="rptMainTitle">2026년 ( )월 환자확인 모니터링 결과</div>
+    <div class="rpt-meta" id="rptMeta"></div>
+  </div>
+
+  <!-- 종합현황 박스 -->
+  <div class="summary-box">
+    <div class="sb-header">종합 현황</div>
+    <table class="sb-table" id="summaryTable"></table>
+    <div class="obs-dept" id="obsDept"></div>
+  </div>
+
+  <!-- 1. 부서별 및 방법별 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">1</span> 부서별 및 방법별 환자확인 결과(단위: 건수/%) <span class="target-badge">목표 90% 이상</span></div>
+    <div class="chart-card">
+      <div class="cc-title">부서별 환자확인율 (%)</div>
+      <canvas id="deptChart" height="60"></canvas>
+    </div>
+    <div class="chart-card" style="padding:0;overflow:hidden;">
+      <table class="dept-table" id="deptTable"></table>
+    </div>
+  </div>
+
+  <!-- 2. 시점별 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">2</span> 시점별 환자확인율(단위: %)</div>
+    <div class="chart-card">
+      <canvas id="timeChart" height="70"></canvas>
+    </div>
+  </div>
+
+  <!-- 3. 직종별 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">3</span> 직종별 환자확인율(단위: %)</div>
+    <div class="chart-card">
+      <canvas id="jobChart" height="80"></canvas>
+    </div>
+  </div>
+
+  <!-- 4. 연차별 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">4</span> 연차별 환자확인율(단위: %)</div>
+    <div class="chart-card">
+      <canvas id="careerChart" height="80"></canvas>
+    </div>
+  </div>
+
+  <!-- 5. 미수행 사유 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">5</span> 미수행 사유(단위: %)</div>
+    <div class="chart-card">
+      <canvas id="reasonChart" height="80"></canvas>
+    </div>
+  </div>
+
+  <!-- 6. 확인도구 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">6</span> 확인도구(단위: 건수)</div>
+    <div class="chart-card">
+      <div class="tool-wrap" id="toolWrap"></div>
+    </div>
+  </div>
+
+  <!-- 7. 종합결과 -->
+  <div class="section">
+    <div class="section-title"><span class="section-num">7</span> 종합결과</div>
+    <div class="summary-result">
+      <div class="sr-text" id="summaryText"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="rpt-footer">
+  <span>좋은삼선병원 | 환자확인 모니터링 결과 | QPS실 내선 9422</span>
+  <span>환자안전 기준 1.1 — 정확한 환자 확인 | 목표 확인율 90% 이상</span>
+</div>
+
+<script>
+let chartInsts={};
+let parsedData=null, parsedPrev=null, parsedPrev2=null;
+
+function destroyCharts(){
+  Object.values(chartInsts).forEach(c=>{try{c.destroy();}catch(e){}});
+  chartInsts={};
+}
+
+function parseData(text){
+  const lines=text.split('\n').map(l=>l.split('\t').map(c=>c.trim()));
+  const d={month:'',total:0,confirmed:0,unconfirmed:0,rate:'',
+    dept:[],time:[],job:[],career:[],reasons:[],patientTools:[],staffTools:[],openDept:[],crossDept:[]};
+  let section='';
+  for(let i=0;i<lines.length;i++){
+    const row=lines[i]; const a=row[0]||'',b=row[1]||'',c=row[2]||'',e=row[3]||'';
+    if(a==='보고월') d.month=b;
+    if(a==='총 관찰건수') d.total=parseInt(b)||0;
+    if(a==='확인 건수') d.confirmed=parseInt(b)||0;
+    if(a==='미확인 건수') d.unconfirmed=parseInt(b)||0;
+    if(a==='확인율'&&!d.rate) d.rate=b;
+    if(a==='부서'&&b==='관찰'&&c==='확인'){section='dept';continue;}
+    if(a==='시점'&&b==='관찰'){section='time';continue;}
+    if(a==='직종'&&b==='관찰'){section='job';continue;}
+    if(a==='경력'&&b==='관찰'){section='career';continue;}
+    if(a==='미수행 사유'){section='reason';continue;}
+    if(a==='환자도구'){section='ptool';continue;}
+    if(a==='직원도구'){section='stool';continue;}
+    if(a==='개방형'&&b==='관찰'){section='open';continue;}
+    if(a==='대조확인'&&b==='관찰'){section='cross';continue;}
+    if(!a||a==='합계') continue;
+    if(section==='dept'&&b&&c&&e) d.dept.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='time'&&b&&c&&e) d.time.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='job'&&b&&c&&e) d.job.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='career'&&b&&c&&e) d.career.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='reason'&&b) d.reasons.push({name:a,count:parseInt(b)||0,rate:c});
+    if(section==='ptool'&&b&&a!=='합계') d.patientTools.push({name:a,count:parseInt(b)||0});
+    if(section==='stool'&&b&&a!=='합계') d.staffTools.push({name:a,count:parseInt(b)||0});
+    if(section==='open'&&b&&c&&e) d.openDept.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+    if(section==='cross'&&b&&c&&e) d.crossDept.push({name:a,obs:parseInt(b)||0,conf:parseInt(c)||0,rate:e});
+  }
+  return d;
+}
+
+function rc(r){const n=parseFloat(r);return n>=90?'rgba(14,107,79,0.8)':n>=70?'rgba(217,119,6,0.8)':'rgba(176,48,48,0.8)';}
+function rch(r){const n=parseFloat(r);return n>=90?'var(--green)':n>=70?'var(--amber)':'var(--red)';}
+function rb(r){const n=parseFloat(r);return n>=90?'<span class="ok-badge">✓</span>':n>=70?'<span class="warn-badge">△</span>':'<span class="fail-badge">✗</span>';}
+
+function renderReport(data,prev,prev2){
+  destroyCharts();
+  parsedData=data; parsedPrev=prev; parsedPrev2=prev2;
+
+  const month=document.getElementById('metaMonth').value||data.month||'';
+  const author=document.getElementById('metaAuthor').value||'';
+  const rn=parseFloat(data.rate);
+
+  // 제목
+  document.getElementById('rptMainTitle').textContent=`${month} 환자확인 모니터링 결과`;
+  document.getElementById('rptMeta').textContent=author?`작성: ${author} | QPS실`:'QPS실';
+
+  // 종합현황 표
+  document.getElementById('summaryTable').innerHTML=`
+    <tr>
+      <th style="width:12%">구분</th><th>총 관찰건수</th><th>확인 건수</th><th>미확인 건수</th><th>확인율</th>
+    </tr>
+    <tr>
+      <td><strong>결과</strong></td>
+      <td><span class="big-num">${data.total.toLocaleString()}</span>건</td>
+      <td><span class="big-num">${data.confirmed.toLocaleString()}</span>건</td>
+      <td><span class="big-num">${data.unconfirmed.toLocaleString()}</span>건</td>
+      <td><span class="big-num ${rn>=90?'sb-rate-ok':'sb-rate-fail'}">${data.rate}</span></td>
+    </tr>`;
+  const deptNames=data.dept.map(d=>d.name).join(', ');
+  document.getElementById('obsDept').innerHTML=`<strong>관찰 부서:</strong> ${deptNames}`;
+
+  // 숫자 표시 플러그인
+  const labelPlugin={
+    id:'barLabel',
+    afterDatasetsDraw(chart){
+      const{ctx}=chart;
+      chart.data.datasets.forEach((ds,i)=>{
+        if(ds.type==='line') return;
+        const meta=chart.getDatasetMeta(i);
+        meta.data.forEach((bar,j)=>{
+          const v=ds.data[j];
+          if(v==null||v===0) return;
+          ctx.save();
+          ctx.fillStyle='#333';
+          ctx.font='bold 10px Apple SD Gothic Neo,맑은 고딕,sans-serif';
+          ctx.textAlign='center';
+          ctx.textBaseline='bottom';
+          ctx.fillText(v+'%', bar.x, bar.y-2);
+          ctx.restore();
+        });
+      });
+    }
+  };
+
+  const lineLabel={
+    id:'lineLabel',
+    afterDatasetsDraw(chart){
+      const{ctx}=chart;
+      chart.data.datasets.forEach((ds,i)=>{
+        const meta=chart.getDatasetMeta(i);
+        meta.data.forEach((pt,j)=>{
+          const v=ds.data[j];
+          if(v==null||v===0) return;
+          ctx.save();
+          ctx.fillStyle=ds.borderColor||'#333';
+          ctx.font='bold 10px Apple SD Gothic Neo,맑은 고딕,sans-serif';
+          ctx.textAlign='center';
+          ctx.textBaseline='bottom';
+          ctx.fillText(v+'%', pt.x, pt.y-5);
+          ctx.restore();
+        });
+      });
+    }
+  };
+
+  // 1. 부서별 차트
+  const dl=data.dept.map(d=>d.name), dr=data.dept.map(d=>parseFloat(d.rate));
+  chartInsts.dept=new Chart(document.getElementById('deptChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:dl,datasets:[
+      {label:'확인율(%)',data:dr,backgroundColor:dr.map(r=>rc(r+'')),borderRadius:3,order:2},
+      {label:'목표(90%)',data:Array(dl.length).fill(90),type:'line',borderColor:'rgba(26,95,168,0.7)',borderWidth:2,borderDash:[6,3],pointRadius:0,fill:false,order:1}
+    ]},
+    plugins:[labelPlugin],
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}}},
+      scales:{y:{min:0,max:110,ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'rgba(0,0,0,0.04)'}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // 부서별 테이블 (부서별+개방형+대조확인)
+  const openMap={}, crossMap={};
+  data.openDept.forEach(d=>openMap[d.name]=d);
+  data.crossDept.forEach(d=>crossMap[d.name]=d);
+
+  const deptRows=data.dept.map(d=>{
+    const o=openMap[d.name], cr=crossMap[d.name];
+    return`<tr>
+      <td class="dept-name">${d.name}</td>
+      <td>${d.obs}</td>
+      <td>${d.conf}</td>
+      <td class="${parseFloat(d.rate)>=90?'rate-ok':parseFloat(d.rate)>=70?'rate-warn':'rate-fail'}">${d.rate}</td>
+      <td>${o?o.conf:'-'}</td>
+      <td class="${o&&parseFloat(o.rate)>=90?'rate-ok':o&&parseFloat(o.rate)>=70?'rate-warn':'rate-fail'}">${o?o.rate:'-'}</td>
+      <td>${cr?cr.conf:'-'}</td>
+      <td class="${cr&&parseFloat(cr.rate)>=90?'rate-ok':cr&&parseFloat(cr.rate)>=70?'rate-warn':'rate-fail'}">${cr?cr.rate:'-'}</td>
+      <td>${rb(d.rate)}</td>
+    </tr>`;}).join('');
+
+  const totObs=data.dept.reduce((s,d)=>s+d.obs,0);
+  const totConf=data.dept.reduce((s,d)=>s+d.conf,0);
+  const totOpen=data.openDept.reduce((s,d)=>s+d.conf,0);
+  const totCross=data.crossDept.reduce((s,d)=>s+d.conf,0);
+  const avgOpen=totObs>0?(totOpen/totObs*100).toFixed(1):'';
+  const avgCross=totObs>0?(totCross/totObs*100).toFixed(1):'';
+
+  document.getElementById('deptTable').innerHTML=`
+    <thead><tr>
+      <th rowspan="2" class="dept-name" style="text-align:left">부서</th>
+      <th rowspan="2">관찰</th>
+      <th colspan="2">1) 부서별 환자확인</th>
+      <th colspan="2">2) 개방형 질문</th>
+      <th colspan="2">3) 대조 확인</th>
+      <th rowspan="2">목표</th>
+    </tr><tr>
+      <th>확인(건)</th><th>확인율(%)</th>
+      <th>확인(건)</th><th>확인율(%)</th>
+      <th>확인(건)</th><th>확인율(%)</th>
+    </tr></thead>
+    <tbody>${deptRows}</tbody>
+    <tfoot><tr class="total-row">
+      <td class="dept-name">합 계</td>
+      <td>${totObs}</td>
+      <td>${totConf}</td>
+      <td class="${rn>=90?'rate-ok':'rate-fail'}">${data.rate}</td>
+      <td>${totOpen||'-'}</td>
+      <td class="${parseFloat(avgOpen)>=90?'rate-ok':'rate-fail'}">${avgOpen?avgOpen+'%':'-'}</td>
+      <td>${totCross||'-'}</td>
+      <td class="${parseFloat(avgCross)>=90?'rate-ok':'rate-fail'}">${avgCross?avgCross+'%':'-'}</td>
+      <td></td>
+    </tr></tfoot>`;
+
+  // 2. 시점별 막대차트
+  const tl=data.time.map(t=>t.name), tr_=data.time.map(t=>parseFloat(t.rate));
+  chartInsts.time=new Chart(document.getElementById('timeChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:tl,datasets:[{label:'확인율(%)',data:tr_,backgroundColor:tr_.map(r=>rc(r+'')),borderRadius:3}]},
+    plugins:[labelPlugin],
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:110,ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // 3. 직종별 3개월 꺾은선
+  const jl=data.job.map(j=>j.name);
+  const jDatasets=[{label:month||'이번달',data:data.job.map(j=>parseFloat(j.rate)),borderColor:'rgba(26,95,168,0.9)',backgroundColor:'rgba(26,95,168,0.1)',tension:0.3,pointRadius:4,pointBackgroundColor:'rgba(26,95,168,0.9)'}];
+  if(prev&&prev.job.length>0) jDatasets.unshift({label:prev.month||'전월',data:jl.map(n=>parseFloat(prev.job.find(j=>j.name===n)?.rate||'0')),borderColor:'rgba(14,107,79,0.7)',backgroundColor:'rgba(14,107,79,0.05)',tension:0.3,pointRadius:4,borderDash:[4,3]});
+  if(prev2&&prev2.job.length>0) jDatasets.unshift({label:prev2.month||'전전월',data:jl.map(n=>parseFloat(prev2.job.find(j=>j.name===n)?.rate||'0')),borderColor:'rgba(150,150,150,0.7)',backgroundColor:'rgba(150,150,150,0.05)',tension:0.3,pointRadius:4,borderDash:[2,4]});
+  chartInsts.job=new Chart(document.getElementById('jobChart').getContext('2d'),{
+    type:'line',
+    data:{labels:jl,datasets:jDatasets},
+    plugins:[lineLabel],
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}}},
+      scales:{y:{min:0,max:110,ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // 4. 연차별 3개월 묶음막대
+  const cl=data.career.map(c=>c.name);
+  const cDatasets=[{label:month||'이번달',data:data.career.map(c=>parseFloat(c.rate)),backgroundColor:'rgba(26,95,168,0.75)',borderRadius:3}];
+  if(prev&&prev.career.length>0) cDatasets.unshift({label:prev.month||'전월',data:cl.map(n=>parseFloat(prev.career.find(c=>c.name===n)?.rate||'0')),backgroundColor:'rgba(14,107,79,0.6)',borderRadius:3});
+  if(prev2&&prev2.career.length>0) cDatasets.unshift({label:prev2.month||'전전월',data:cl.map(n=>parseFloat(prev2.career.find(c=>c.name===n)?.rate||'0')),backgroundColor:'rgba(180,180,180,0.6)',borderRadius:3});
+  chartInsts.career=new Chart(document.getElementById('careerChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:cl,datasets:cDatasets},
+    plugins:[labelPlugin],
+    options:{responsive:true,plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:14}}},
+      scales:{y:{min:0,max:110,ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // 5. 미수행 사유 막대
+  const reasons=data.reasons.filter(r=>r.count>0||r.name);
+  const rl=reasons.map(r=>r.name), rr=reasons.map(r=>parseFloat(r.rate)||0);
+  chartInsts.reason=new Chart(document.getElementById('reasonChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:rl,datasets:[{label:'비율(%)',data:rr,
+      backgroundColor:rr.map((_,i)=>i===rr.indexOf(Math.max(...rr))?'rgba(176,48,48,0.8)':'rgba(145,153,168,0.6)'),borderRadius:3}]},
+    plugins:[labelPlugin],
+    options:{responsive:true,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}}}
+  });
+
+  // 6. 확인도구
+  const ptHtml=`<div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:6px;">환자용 도구</div>
+    <table class="tool-table"><thead><tr><th>도구</th><th>건수</th></tr></thead><tbody>
+    ${data.patientTools.map(t=>`<tr><td>${t.name}</td><td>${t.count}</td></tr>`).join('')}
+    </tbody></table>`;
+  const stHtml=`<div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:6px;">직원용 도구</div>
+    <table class="tool-table"><thead><tr><th>도구</th><th>건수</th></tr></thead><tbody>
+    ${data.staffTools.map(t=>`<tr><td>${t.name}</td><td>${t.count}</td></tr>`).join('')}
+    </tbody></table>`;
+  document.getElementById('toolWrap').innerHTML=`<div>${ptHtml}</div><div>${stHtml}</div>`;
+
+  // 7. 종합결과 자동생성
+  generateSummary(data,prev,month);
+
+  document.getElementById('inputWrap').style.display='none';
+  document.getElementById('reportBody').classList.add('show');
+  document.getElementById('wordBtn').style.display='inline-flex';
+}
+
+function generateSummary(data,prev,month){
+  const rn=parseFloat(data.rate);
+  const prevRate=prev?parseFloat(prev.rate):null;
+  const diff=prevRate!==null?(rn-prevRate).toFixed(1):null;
+  const targetMet=rn>=90;
+
+  // 전체
+  const diffStr=diff!==null?(diff>0?`, 전월 대비 ${diff}%p 상승`:diff<0?`, 전월 대비 ${Math.abs(diff)}%p 하락`:', 전월과 동일'):'';
+  let html=`<p style="margin-bottom:10px;">${month} 환자확인 모니터링 결과, 총 ${data.total.toLocaleString()}건의 관찰 중 ${data.confirmed.toLocaleString()}건이 확인되어 전체 환자확인율은 <strong>${data.rate}</strong>를 기록했으며${diffStr}, 이는 목표치(90.0% 이상)에 <strong>${targetMet?'달성한':'미달한'}</strong> 결과입니다.</p>`;
+  html+=`<p style="font-weight:700;margin-bottom:6px;">주요 확인율 분석</p><ul style="padding-left:20px;line-height:2.2;">`;
+
+  // 부서별
+  const achieved=data.dept.filter(d=>parseFloat(d.rate)>=90).map(d=>d.name);
+  const failed=data.dept.filter(d=>parseFloat(d.rate)<90).sort((a,b)=>parseFloat(a.rate)-parseFloat(b.rate));
+  if(achieved.length>0||failed.length>0){
+    let t=`<li><strong>부서별:</strong> `;
+    if(achieved.length>0) t+=`${achieved.join(', ')} 등 총 ${achieved.length}개 부서가 100.0% 확인율을 달성했습니다.`;
+    if(failed.length>0) t+=` 반면, ${failed.slice(0,3).map(d=>`${d.name}(${d.rate})`).join(', ')}의 확인율이 가장 낮아 해당 부서의 집중적인 개선이 요구됩니다.`;
+    html+=t+'</li>';
+  }
+
+  // 확인방법별
+  const totObs=data.dept.reduce((s,d)=>s+d.obs,0);
+  const totOpen=data.openDept.reduce((s,d)=>s+d.conf,0);
+  const totCross=data.crossDept.reduce((s,d)=>s+d.conf,0);
+  if(totOpen>0&&totCross>0){
+    const openRate=(totOpen/totObs*100).toFixed(1);
+    const crossRate=(totCross/totObs*100).toFixed(1);
+    html+=`<li><strong>확인 방법별:</strong> 대조 확인이 ${crossRate}%로 개방형 질문의 ${openRate}%보다 ${parseFloat(crossRate)>=parseFloat(openRate)?'높은':'낮은'} 확인율을 나타냈습니다.</li>`;
+  }
+
+  // 시점별
+  const perfectTime=data.time.filter(t=>parseFloat(t.rate)===100&&t.obs>0).map(t=>t.name);
+  const lowestTime=[...data.time].filter(t=>t.obs>0).sort((a,b)=>parseFloat(a.rate)-parseFloat(b.rate))[0];
+  if(perfectTime.length>0||lowestTime){
+    let t=`<li><strong>시점별:</strong> `;
+    if(perfectTime.length>0) t+=`'${perfectTime.slice(0,4).join("', '")}' 시점에서는 100.0%의 높은 확인율을 보였습니다.`;
+    if(lowestTime&&parseFloat(lowestTime.rate)<100) t+=` 반면, 환자확인율이 가장 낮았던 시점은 ${lowestTime.name}(${lowestTime.rate})이었습니다.`;
+    html+=t+'</li>';
+  }
+
+  // 직종별
+  const perfectJob=data.job.filter(j=>parseFloat(j.rate)===100&&j.obs>0).map(j=>j.name);
+  const lowJobs=[...data.job].filter(j=>j.obs>0&&parseFloat(j.rate)<100).sort((a,b)=>parseFloat(a.rate)-parseFloat(b.rate)).slice(0,2);
+  if(perfectJob.length>0||lowJobs.length>0){
+    let t=`<li><strong>직종별:</strong> `;
+    if(perfectJob.length>0) t+=`'${perfectJob.join("', '")}' 등은 100.0% 확인율을 달성했습니다.`;
+    if(lowJobs.length>0) t+=` 가장 낮은 확인율을 보인 직종은 ${lowJobs.map(j=>`${j.name}(${j.rate})`).join('와 ')}였습니다.`;
+    html+=t+'</li>';
+  }
+
+  // 연차별
+  if(data.career.length>0){
+    const sorted=[...data.career].filter(c=>c.obs>0).sort((a,b)=>parseFloat(b.rate)-parseFloat(a.rate));
+    html+=`<li><strong>연차별:</strong> ${sorted.map(c=>`${c.name}이 ${c.rate}`).join(', ')} 순으로 확인율을 기록했습니다.</li>`;
+  }
+
+  // 미수행사유
+  const topReason=[...data.reasons].filter(r=>r.count>0).sort((a,b)=>b.count-a.count)[0];
+  if(topReason) html+=`<li><strong>미수행 사유:</strong> 환자확인을 미수행한 가장 주된 사유는 '<strong>${topReason.name}</strong>'에 대한 것으로, 전체 미수행 사유의 ${topReason.rate}를 차지하여 지속적인 교육 강화가 필요한 것으로 파악되었습니다.</li>`;
+
+  html+='</ul>';
+  document.getElementById('summaryText').innerHTML=html;
+}
+
+function parseAndRender(){
+  const text=document.getElementById('pasteArea').value.trim();
+  if(!text){alert('이번 달 데이터를 붙여넣어 주세요!');return;}
+  const data=parseData(text);
+  if(!data.total){alert('데이터 형식을 확인해주세요.');return;}
+  const prev=document.getElementById('pasteAreaPrev').value.trim()?parseData(document.getElementById('pasteAreaPrev').value.trim()):null;
+  const prev2=document.getElementById('pasteAreaPrev2').value.trim()?parseData(document.getElementById('pasteAreaPrev2').value.trim()):null;
+  renderReport(data,prev,prev2);
+}
+
+function resetReport(){
+  destroyCharts(); parsedData=null; parsedPrev=null; parsedPrev2=null;
+  ['pasteArea','pasteAreaPrev','pasteAreaPrev2'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('reportBody').classList.remove('show');
+  document.getElementById('inputWrap').style.display='block';
+  document.getElementById('wordBtn').style.display='none';
+}
+
+function loadSample(){
+  const s=`항목\t값\n보고월\t2026-01\n\n\n항목\t값\n총 관찰건수\t400\n확인 건수\t359\n미확인 건수\t41\n확인율\t89.8%\n\n부서\t관찰\t확인\t확인율\n원무팀\t20\t18\t90.0%\n건강증진팀\t20\t17\t85.0%\n외래\t20\t13\t65.0%\n응급실\t20\t10\t50.0%\n중환자실\t20\t20\t100.0%\n내시경실\t20\t20\t100.0%\n6병동\t20\t16\t80.0%\n7병동\t20\t17\t85.0%\n8병동\t20\t20\t100.0%\n9병동\t20\t18\t90.0%\n10병동\t20\t19\t95.0%\n11병동\t20\t15\t75.0%\n12병동\t20\t19\t95.0%\n13병동\t20\t19\t95.0%\n15병동\t20\t20\t100.0%\n영상\t20\t20\t100.0%\n진검\t20\t20\t100.0%\n혈관\t20\t18\t90.0%\n수술실\t20\t20\t100.0%\n재활\t20\t20\t100.0%\n합계\t400\t359\t89.8%\n\n시점\t관찰\t확인\t확인율\n원무접수전\t11\t10\t90.0%\n원무수납전\t7\t7\t100.0%\n서류발급전\t10\t10\t100.0%\n외래접수전\t6\t4\t66.7%\n외래진료전\t20\t18\t90.8%\n의약품투여전\t102\t87\t85.3%\n혈액제제투여전\t14\t14\t100.0%\n검사전\t113\t105\t92.9%\n처치전\t42\t36\t85.7%\n시술전\t16\t14\t87.5%\n수술전\t30\t30\t100.0%\n환자인식팔찌착용전\t19\t19\t100.0%\n이송전\t15\t11\t73.3%\n\n직종\t관찰\t확인\t확인율\n전문의\t9\t7\t77.8%\n전공의\t2\t2\t100.0%\n간호사\t253\t230\t90.9%\n간호조무사\t34\t26\t76.5%\n요양보호사\t3\t3\t100.0%\n방사선사\t27\t27\t100.0%\n임상병리사\t22\t22\t100.0%\n재활치료사\t20\t20\t100.0%\n원무직원\t28\t28\t100.0%\n이송직원\t2\t1\t50.0%\n\n경력\t관찰\t확인\t확인율\n1년차미만\t8\t7\t87.5%\n1년차~3년차미만\t30\t27\t90.0%\n3년차이상\t81\t73\t90.1%\n\n미수행 사유\t건수\t비율\n습관적생략\t6\t14.6%\n알고있는환자\t16\t39.0%\n환자확인방법모름\t0\t0.0%\n환자비협조\t6\t14.6%\n1인대기\t5\t12.2%\n대조도구없음\t1\t2.4%\n바빠서\t7\t17.1%\n합계\t41\t100.0%\n\n환자도구\t건수\n접수예약증\t48\n영수증\t4\n진료순서안내지\t30\n환자인식팔찌\t245\n환자or보호자암기\t29\n문진표\t2\n신분증\t6\n\n직원도구\t건수\n전산\t129\n검사처치확인표\t54\nflowsheet\t0\n투약라벨\t90\n검사라벨\t27\n수혈라벨\t11\n수술시술전확인표\t31\n약봉투\t10\n이송의뢰지\t12\n\n개방형\t관찰\t확인\t확인율\n원무팀\t20\t18\t90.0%\n건강증진팀\t20\t18\t90.0%\n외래\t20\t18\t90.0%\n응급실\t20\t11\t55.0%\n중환자실\t20\t20\t100.0%\n내시경실\t20\t20\t100.0%\n6병동\t20\t16\t80.0%\n7병동\t20\t17\t85.0%\n8병동\t20\t20\t100.0%\n9병동\t20\t18\t90.0%\n10병동\t20\t20\t100.0%\n11병동\t20\t19\t95.0%\n12병동\t20\t19\t95.0%\n13병동\t20\t20\t100.0%\n15병동\t20\t20\t100.0%\n영상\t20\t20\t100.0%\n진검\t20\t20\t100.0%\n혈관\t20\t18\t90.0%\n수술실\t20\t20\t100.0%\n재활\t20\t20\t100.0%\n\n대조확인\t관찰\t확인\t확인율\n원무팀\t20\t20\t100.0%\n건강증진팀\t20\t17\t85.0%\n외래\t20\t13\t65.0%\n응급실\t20\t10\t50.0%\n중환자실\t20\t20\t100.0%\n내시경실\t20\t20\t100.0%\n6병동\t20\t16\t80.0%\n7병동\t20\t17\t85.0%\n8병동\t20\t20\t100.0%\n9병동\t20\t18\t90.0%\n10병동\t20\t19\t95.0%\n11병동\t20\t15\t75.0%\n12병동\t20\t20\t100.0%\n13병동\t20\t19\t95.0%\n15병동\t20\t20\t100.0%\n영상\t20\t20\t100.0%\n진검\t20\t20\t100.0%\n혈관\t20\t20\t100.0%\n수술실\t20\t20\t100.0%\n재활\t20\t20\t100.0%`;
+  document.getElementById('pasteArea').value=s;
+  document.getElementById('metaMonth').value='2026년 1월';
+  parseAndRender();
+}
+
+function exportWord(){
+  if(!parsedData) return;
+  const d=parsedData; const month=document.getElementById('metaMonth').value||d.month||'';
+  const author=document.getElementById('metaAuthor').value||'';
+  const rn=parseFloat(d.rate);
+
+  const totObs=d.dept.reduce((s,v)=>s+v.obs,0);
+  const totOpen=d.openDept.reduce((s,v)=>s+v.conf,0);
+  const totCross=d.crossDept.reduce((s,v)=>s+v.conf,0);
+  const openRate=totObs>0?(totOpen/totObs*100).toFixed(1):'';
+  const crossRate=totObs>0?(totCross/totObs*100).toFixed(1):'';
+
+  const openMap={}, crossMap={};
+  d.openDept.forEach(v=>openMap[v.name]=v);
+  d.crossDept.forEach(v=>crossMap[v.name]=v);
+
+  const deptRows=d.dept.map((dept,i)=>{
+    const o=openMap[dept.name],cr=crossMap[dept.name];
+    return`<tr style="${i%2===1?'background:#f9fafb':''}">
+      <td>${dept.name}</td><td style="text-align:center">${dept.obs}</td>
+      <td style="text-align:center">${dept.conf}</td>
+      <td style="text-align:center;font-weight:bold;color:${parseFloat(dept.rate)>=90?'#0e6b4f':parseFloat(dept.rate)>=70?'#8a5e00':'#b03030'}">${dept.rate}</td>
+      <td style="text-align:center">${o?o.conf:'-'}</td>
+      <td style="text-align:center;font-weight:bold;color:${o&&parseFloat(o.rate)>=90?'#0e6b4f':'#b03030'}">${o?o.rate:'-'}</td>
+      <td style="text-align:center">${cr?cr.conf:'-'}</td>
+      <td style="text-align:center;font-weight:bold;color:${cr&&parseFloat(cr.rate)>=90?'#0e6b4f':'#b03030'}">${cr?cr.rate:'-'}</td>
+    </tr>`}).join('');
+
+  const summaryHtml=document.getElementById('summaryText')?.innerHTML||'';
+
+  const html=`
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset='utf-8'>
+<style>
+  body{font-family:'맑은 고딕',Arial,sans-serif;font-size:10pt;margin:1cm 1.5cm;line-height:1.6;}
+  h1{font-size:16pt;font-weight:900;text-align:center;border:2px solid #333;padding:10px;margin-bottom:12px;}
+  h2{font-size:11pt;color:#1a5fa8;margin-top:14px;margin-bottom:6px;border-left:4px solid #1a5fa8;padding-left:8px;}
+  table{border-collapse:collapse;width:100%;margin-bottom:10px;font-size:9pt;}
+  th{background:#e8f0fb;padding:5px 7px;text-align:center;border:1px solid #c4cad5;font-weight:bold;}
+  td{border:1px solid #c4cad5;padding:4px 7px;}
+  .meta{font-size:9pt;color:#555;text-align:right;margin-bottom:8px;}
+  .footer{margin-top:16px;font-size:8pt;color:#888;border-top:1px solid #dde1e9;padding-top:4px;text-align:right;}
+  ul{padding-left:18px;line-height:2;}
+</style>
+</head>
+<body>
+<h1>${month} 환자확인 모니터링 결과</h1>
+<div class="meta">${author?`작성: ${author} | `:''}좋은삼선병원 QPS실</div>
+
+<table style="margin-bottom:12px;">
+  <tr><th>구분</th><th>총 관찰건수</th><th>확인 건수</th><th>미확인 건수</th><th>확인율</th></tr>
+  <tr>
+    <td style="text-align:center;font-weight:bold">결과</td>
+    <td style="text-align:center;font-weight:bold">${d.total.toLocaleString()}건</td>
+    <td style="text-align:center;font-weight:bold">${d.confirmed.toLocaleString()}건</td>
+    <td style="text-align:center;font-weight:bold">${d.unconfirmed.toLocaleString()}건</td>
+    <td style="text-align:center;font-weight:bold;font-size:13pt;color:${rn>=90?'#0e6b4f':'#b03030'}">${d.rate}</td>
+  </tr>
+  <tr><td colspan="5" style="font-size:9pt;color:#555">관찰 부서: ${d.dept.map(v=>v.name).join(', ')}</td></tr>
+</table>
+
+<h2>1. 부서별 및 방법별 환자확인 결과 (단위: 건수/%)</h2>
+<table>
+  <tr><th rowspan="2">부서</th><th rowspan="2">관찰</th><th colspan="2">1) 부서별 환자확인</th><th colspan="2">2) 개방형 질문</th><th colspan="2">3) 대조 확인</th></tr>
+  <tr><th>확인(건)</th><th>확인율(%)</th><th>확인(건)</th><th>확인율(%)</th><th>확인(건)</th><th>확인율(%)</th></tr>
+  ${deptRows}
+  <tr style="background:#e8f0fb;font-weight:bold">
+    <td>합 계</td><td style="text-align:center">${totObs}</td>
+    <td style="text-align:center">${d.confirmed}</td><td style="text-align:center;color:${rn>=90?'#0e6b4f':'#b03030'}">${d.rate}</td>
+    <td style="text-align:center">${totOpen||'-'}</td><td style="text-align:center">${openRate?openRate+'%':'-'}</td>
+    <td style="text-align:center">${totCross||'-'}</td><td style="text-align:center">${crossRate?crossRate+'%':'-'}</td>
+  </tr>
+</table>
+
+<h2>2. 시점별 환자확인율 (단위: %)</h2>
+<table><tr><th>시점</th><th>관찰</th><th>확인</th><th>확인율</th></tr>
+${d.time.map((t,i)=>`<tr style="${i%2===1?'background:#f9fafb':''}"><td>${t.name}</td><td style="text-align:center">${t.obs}</td><td style="text-align:center">${t.conf}</td><td style="text-align:center;font-weight:bold">${t.rate}</td></tr>`).join('')}
+</table>
+
+<h2>3. 직종별 환자확인율 (단위: %)</h2>
+<table><tr><th>직종</th><th>관찰</th><th>확인</th><th>확인율</th></tr>
+${d.job.map((j,i)=>`<tr style="${i%2===1?'background:#f9fafb':''}"><td>${j.name}</td><td style="text-align:center">${j.obs}</td><td style="text-align:center">${j.conf}</td><td style="text-align:center;font-weight:bold">${j.rate}</td></tr>`).join('')}
+</table>
+
+<h2>4. 연차별 환자확인율 (단위: %)</h2>
+<table><tr><th>경력</th><th>관찰</th><th>확인</th><th>확인율</th></tr>
+${d.career.map((c,i)=>`<tr style="${i%2===1?'background:#f9fafb':''}"><td>${c.name}</td><td style="text-align:center">${c.obs}</td><td style="text-align:center">${c.conf}</td><td style="text-align:center;font-weight:bold">${c.rate}</td></tr>`).join('')}
+</table>
+
+<h2>5. 미수행 사유 (단위: %)</h2>
+<table><tr><th>사유</th><th>건수</th><th>비율</th></tr>
+${d.reasons.filter(r=>r.count>0).map((r,i)=>`<tr style="${i%2===1?'background:#f9fafb':''}"><td>${r.name}</td><td style="text-align:center">${r.count}건</td><td style="text-align:center">${r.rate}</td></tr>`).join('')}
+</table>
+
+<h2>6. 확인도구 (단위: 건수)</h2>
+<table><tr><th>환자용 도구</th><th>건수</th><th>직원용 도구</th><th>건수</th></tr>
+${Array.from({length:Math.max(d.patientTools.length,d.staffTools.length)}).map((_,i)=>`<tr>
+  <td>${d.patientTools[i]?.name||'-'}</td><td style="text-align:right">${d.patientTools[i]?.count??''}</td>
+  <td>${d.staffTools[i]?.name||'-'}</td><td style="text-align:right">${d.staffTools[i]?.count??''}</td>
+</tr>`).join('')}
+</table>
+
+<h2>7. 종합결과</h2>
+<div style="border:1px solid #c4cad5;border-radius:4px;padding:12px 14px;font-size:10pt;line-height:2;">
+${summaryHtml}
+</div>
+
+<div class="footer">작성일: ${new Date().toLocaleDateString('ko-KR')} | 좋은삼선병원 QPS실 내선 9422 | 환자안전 기준 1.1</div>
+</body></html>`;
+
+  const blob=new Blob(['\ufeff'+html],{type:'application/msword;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`환자확인_모니터링결과_${month||new Date().toISOString().slice(0,7)}.doc`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>
