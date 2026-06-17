@@ -434,6 +434,50 @@ border-radius:8px;padding:24px 16px;text-align:center;cursor:pointer;transition:
 let chartInsts={};
 let parsedData=null, parsedPrev=null, parsedPrev2=null;
 
+// 숫자 표시 플러그인 (전역)
+const labelPlugin={
+  id:'barLabel',
+  afterDatasetsDraw(chart){
+    const{ctx}=chart;
+    chart.data.datasets.forEach((ds,i)=>{
+      if(ds.type==='line') return;
+      const meta=chart.getDatasetMeta(i);
+      meta.data.forEach((bar,j)=>{
+        const v=ds.data[j];
+        if(v==null||v===0) return;
+        ctx.save();
+        ctx.fillStyle='#333';
+        ctx.font='bold 10px Apple SD Gothic Neo,맑은 고딕,sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+        ctx.fillText(v+'%', bar.x, bar.y-2);
+        ctx.restore();
+      });
+    });
+  }
+};
+
+const lineLabel={
+  id:'lineLabel',
+  afterDatasetsDraw(chart){
+    const{ctx}=chart;
+    chart.data.datasets.forEach((ds,i)=>{
+      const meta=chart.getDatasetMeta(i);
+      meta.data.forEach((pt,j)=>{
+        const v=ds.data[j];
+        if(v==null||v===0) return;
+        ctx.save();
+        ctx.fillStyle=ds.borderColor||'#333';
+        ctx.font='bold 10px Apple SD Gothic Neo,맑은 고딕,sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+        ctx.fillText(v+'%', pt.x, pt.y-5);
+        ctx.restore();
+      });
+    });
+  }
+};
+
 function destroyCharts(){
   Object.values(chartInsts).forEach(c=>{try{c.destroy();}catch(e){}});
   chartInsts={};
@@ -492,9 +536,7 @@ function renderReport(data,prev,prev2){
 
   // 종합현황 표
   document.getElementById('summaryTable').innerHTML=`
-    <tr>
-      <th style="width:12%">구분</th><th>총 관찰건수</th><th>확인 건수</th><th>미확인 건수</th><th>확인율</th>
-    </tr>
+    <tr><th style="width:12%">구분</th><th>총 관찰건수</th><th>확인 건수</th><th>미확인 건수</th><th>확인율</th></tr>
     <tr>
       <td><strong>결과</strong></td>
       <td><span class="big-num">${data.total.toLocaleString()}</span>건</td>
@@ -502,56 +544,55 @@ function renderReport(data,prev,prev2){
       <td><span class="big-num">${data.unconfirmed.toLocaleString()}</span>건</td>
       <td><span class="big-num ${rn>=90?'sb-rate-ok':'sb-rate-fail'}">${data.rate}</span></td>
     </tr>`;
-  const deptNames=data.dept.map(d=>d.name).join(', ');
-  document.getElementById('obsDept').innerHTML=`<strong>관찰 부서:</strong> ${deptNames}`;
+  document.getElementById('obsDept').innerHTML=`<strong>관찰 부서:</strong> ${data.dept.map(d=>d.name).join(', ')}`;
 
-  // 숫자 표시 플러그인
-  const labelPlugin={
-    id:'barLabel',
-    afterDatasetsDraw(chart){
-      const{ctx}=chart;
-      chart.data.datasets.forEach((ds,i)=>{
-        if(ds.type==='line') return;
-        const meta=chart.getDatasetMeta(i);
-        meta.data.forEach((bar,j)=>{
-          const v=ds.data[j];
-          if(v==null||v===0) return;
-          ctx.save();
-          ctx.fillStyle='#333';
-          ctx.font='bold 10px Apple SD Gothic Neo,맑은 고딕,sans-serif';
-          ctx.textAlign='center';
-          ctx.textBaseline='bottom';
-          ctx.fillText(v+'%', bar.x, bar.y-2);
-          ctx.restore();
-        });
-      });
-    }
-  };
+  // 부서별 테이블
+  const openMap={}, crossMap={};
+  data.openDept.forEach(d=>openMap[d.name]=d);
+  data.crossDept.forEach(d=>crossMap[d.name]=d);
+  const deptRows=data.dept.map(d=>{
+    const o=openMap[d.name], cr=crossMap[d.name];
+    return`<tr>
+      <td class="dept-name">${d.name}</td><td>${d.obs}</td>
+      <td>${d.conf}</td>
+      <td class="${parseFloat(d.rate)>=90?'rate-ok':parseFloat(d.rate)>=70?'rate-warn':'rate-fail'}">${d.rate}</td>
+      <td>${o?o.conf:'-'}</td>
+      <td class="${o&&parseFloat(o.rate)>=90?'rate-ok':o&&parseFloat(o.rate)>=70?'rate-warn':'rate-fail'}">${o?o.rate:'-'}</td>
+      <td>${cr?cr.conf:'-'}</td>
+      <td class="${cr&&parseFloat(cr.rate)>=90?'rate-ok':cr&&parseFloat(cr.rate)>=70?'rate-warn':'rate-fail'}">${cr?cr.rate:'-'}</td>
+      <td>${rb(d.rate)}</td>
+    </tr>`;}).join('');
+  const totObs=data.dept.reduce((s,d)=>s+d.obs,0);
+  const totConf=data.dept.reduce((s,d)=>s+d.conf,0);
+  const totOpen=data.openDept.reduce((s,d)=>s+d.conf,0);
+  const totCross=data.crossDept.reduce((s,d)=>s+d.conf,0);
+  const avgOpen=totObs>0?(totOpen/totObs*100).toFixed(1):'';
+  const avgCross=totObs>0?(totCross/totObs*100).toFixed(1):'';
+  document.getElementById('deptTable').innerHTML=`
+    <thead><tr>
+      <th rowspan="2" class="dept-name" style="text-align:left">부서</th>
+      <th rowspan="2">관찰</th>
+      <th colspan="2">1) 부서별 환자확인</th>
+      <th colspan="2">2) 개방형 질문</th>
+      <th colspan="2">3) 대조 확인</th>
+      <th rowspan="2">목표</th>
+    </tr><tr>
+      <th>확인(건)</th><th>확인율(%)</th>
+      <th>확인(건)</th><th>확인율(%)</th>
+      <th>확인(건)</th><th>확인율(%)</th>
+    </tr></thead>
+    <tbody>${deptRows}</tbody>
+    <tfoot><tr class="total-row">
+      <td class="dept-name">합 계</td><td>${totObs}</td><td>${totConf}</td>
+      <td class="${rn>=90?'rate-ok':'rate-fail'}">${data.rate}</td>
+      <td>${totOpen||'-'}</td>
+      <td class="${parseFloat(avgOpen)>=90?'rate-ok':'rate-fail'}">${avgOpen?avgOpen+'%':'-'}</td>
+      <td>${totCross||'-'}</td>
+      <td class="${parseFloat(avgCross)>=90?'rate-ok':'rate-fail'}">${avgCross?avgCross+'%':'-'}</td>
+      <td></td>
+    </tr></tfoot>`;
 
-  const lineLabel={
-    id:'lineLabel',
-    afterDatasetsDraw(chart){
-      const{ctx}=chart;
-      chart.data.datasets.forEach((ds,i)=>{
-        const meta=chart.getDatasetMeta(i);
-        meta.data.forEach((pt,j)=>{
-          const v=ds.data[j];
-          if(v==null||v===0) return;
-          ctx.save();
-          ctx.fillStyle=ds.borderColor||'#333';
-          ctx.font='bold 10px Apple SD Gothic Neo,맑은 고딕,sans-serif';
-          ctx.textAlign='center';
-          ctx.textBaseline='bottom';
-          ctx.fillText(v+'%', pt.x, pt.y-5);
-          ctx.restore();
-        });
-      });
-    }
-  };
-
-  // 차트는 applyChartSettings()에서 통합 렌더링
-
-  // 6. 확인도구
+  // 확인도구
   const ptHtml=`<div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:6px;">환자용 도구</div>
     <table class="tool-table"><thead><tr><th>도구</th><th>건수</th></tr></thead><tbody>
     ${data.patientTools.map(t=>`<tr><td>${t.name}</td><td>${t.count}</td></tr>`).join('')}
@@ -562,15 +603,15 @@ function renderReport(data,prev,prev2){
     </tbody></table>`;
   document.getElementById('toolWrap').innerHTML=`<div>${ptHtml}</div><div>${stHtml}</div>`;
 
-  // 7. 종합결과 자동생성
+  // 종합결과 자동생성
   generateSummary(data,prev,month);
 
   document.getElementById('inputWrap').style.display='none';
   document.getElementById('reportBody').classList.add('show');
   document.getElementById('wordBtn').style.display='inline-flex';
   document.getElementById('chartSettingBtn').style.display='inline-flex';
-  // 기본 설정으로 차트 초기 렌더
-  setTimeout(()=>applyChartSettings(), 100);
+  // 차트 렌더 (applyChartSettings로 통합)
+  setTimeout(()=>applyChartSettings(), 150);
 }
 
 // 그래프 설정 패널
